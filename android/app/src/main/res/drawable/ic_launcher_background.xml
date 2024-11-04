@@ -1,0 +1,4 @@
+<!-- ic_launcher_background.xml -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/icon_background_color"/> <!-- 배경 색상을 white로 설정 -->
+</layer-list>
