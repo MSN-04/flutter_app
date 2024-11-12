@@ -1,19 +1,23 @@
+import 'package:flutter/material.dart';
+
 class UrlConstants {
   static const String apiUrl = "http://192.168.0.227:1112/api";
 
-  //logincontroller
-  static const String loginEndPoint = "/Login";
+  static const String login = "/Login";
 
-  //tokencontroller
-  static const String saveTokenEndPoint = "/Token";
+  static const String saveToken = "/Token";
 
-  //pushcontroller
-  static const String pushListEndPoint = "/Push";
-  static const String dashboardPushEndPoint = "/Push/dashboard";
-  static const String pushReadEndPoint = "/Push/read";
-  static const String unreadNotificationsEndPoint = "/Push/unreadCount";
+  static const String menu = "/Menu";
+
+  static const String dashboardList = "/Dashboard";
+  static const String dashboardUnread = "/Dashboard/unread";
+  static const String dashboardUnckeck = "/Dashboard/uncheck";
+
+  static const String push = "/Push";
+  static const String pushDoRead = "/Push/read";
+  static const String pushRead = "/Push/read";
+  static const String pushcheck = "/Push/check";
 
   static const int timeoutDuration = 5000; // milliseconds
-  static const String fileDownloadUrl =
-      "http://khnt.nkcf.com/TIS.DataService/Download.aspx";
+  static const String pictureUrl = "https://ep.nkspe.com";
 }

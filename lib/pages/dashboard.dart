@@ -18,6 +18,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? userData;
   List<Map<String, dynamic>> pushs = [];
   bool isLoading = true;
+  String unreadCnt = '0';
+  String unCheckCnt = '0';
 
   @override
   void initState() {
@@ -45,12 +47,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<List<Map<String, dynamic>>> fetchPush(
       Map<String, dynamic> userData) async {
     final url =
-        Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardPushEndPoint)
-            .toString();
+        Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardList).toString();
     final response = await HttpService.get('$url/${userData['PSPSN_NO']}');
 
     if (response.statusCode == 200) {
       List<dynamic> jsonData = jsonDecode(response.body);
+      final url2 = Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardUnread)
+          .toString();
+      final response2 = await HttpService.get('$url2/${userData['PSPSN_NO']}');
+      unreadCnt = response2.body;
+
+      final url3 =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardUnckeck)
+              .toString();
+      final response3 = await HttpService.get('$url3/${userData['PSPSN_NO']}');
+      unCheckCnt = response3.body;
+
       return jsonData.cast<Map<String, dynamic>>();
     } else {
       throw Exception("Failed to load push");
@@ -87,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CircleAvatar(
                               radius: 40,
                               backgroundImage: NetworkImage(
-                                '${UrlConstants.fileDownloadUrl}?COMP_ID=${userData!['COMP_ID']}&SYBSN_CODE=${userData!['SYUSR_BSN_CODE']}&ATCH_BSN_TYP=PSPSN&ATCH_DATA_KEY=${userData!['PSPSN_NO']}&ATCH_DATA_SEQ=1&WIDTH=119&HEIGHT=159',
+                                '${UrlConstants.pictureUrl}${userData!['PSPSN_PICTURE']}',
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -150,8 +162,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             Row(
                               children: [
+                                const SizedBox(width: 8),
                                 const Text(
-                                  '읽지 않은 알림',
+                                  '최근 알림',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -159,8 +172,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Badge(
-                                  label: Text(pushs.length.toString()),
-                                  child: const Icon(Icons.notifications),
+                                  label: Text(unreadCnt),
+                                  backgroundColor: Colors.blueAccent,
+                                  child: const Icon(Icons.mark_email_unread),
+                                ),
+                                const SizedBox(width: 8),
+                                Badge(
+                                  label: Text(unCheckCnt),
+                                  backgroundColor: Colors.redAccent,
+                                  child: const Icon(Icons.report),
                                 ),
                               ],
                             ),
@@ -179,18 +199,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         leading: Icon(
                                           Util.getIcon(
                                               push['PUSH_ICON'] ?? 'null'),
-                                          color: push['PUSH_READ'] == 'N'
-                                              ? Colors.blue
-                                              : Colors.grey,
+                                          color: push['PUSH_CHK'] == false
+                                              ? Colors.redAccent
+                                              : push['PUSH_READ'] == false
+                                                  ? Colors.blueAccent
+                                                  : Colors.grey,
                                         ),
                                         title: Text(
                                           push['PUSH_TITLE'] ?? '알림 제목',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontWeight: push['PUSH_READ'] == 'N'
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                            fontWeight:
+                                                push['PUSH_CHK'] == false
+                                                    ? FontWeight.bold
+                                                    : push['PUSH_READ'] == false
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
                                           ),
                                         ),
                                         subtitle: Text(
@@ -198,9 +223,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontWeight: push['PUSH_READ'] == 'N'
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                            fontWeight:
+                                                push['PUSH_CHK'] == false
+                                                    ? FontWeight.bold
+                                                    : push['PUSH_READ'] == false
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
                                           ),
                                         ),
                                         trailing: Text(
@@ -214,11 +242,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           await setPushRead(push['PUSH_ID']);
                                           Navigator.pushNamed(
                                             context,
-                                            '/notificationDetail',
+                                            '/push_type_detail',
                                             arguments: push,
                                           ).then((_) {
                                             setState(() {
-                                              push['PUSH_READ'] = 'Y';
+                                              push['PUSH_READ'] = true;
                                             });
                                           });
                                         },
@@ -240,8 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<bool> setPushRead(int id) async {
-    var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.pushReadEndPoint)
-        .toString();
+    var url =
+        Uri.parse(UrlConstants.apiUrl + UrlConstants.pushDoRead).toString();
     var response = await HttpService.post(url, {'id': id});
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);

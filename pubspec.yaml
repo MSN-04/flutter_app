@@ -21,6 +21,7 @@ dependencies:
       url: https://github.com/g123k/flutter_app_badger.git
       ref: 33cbee6
   flutter_native_splash: ^2.4.2
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:

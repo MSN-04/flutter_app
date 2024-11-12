@@ -1,0 +1,5 @@
+<resources>
+    <style name="NkLaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/icon_background_color</item>
+    </style>
+</resources>

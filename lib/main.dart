@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:nk_app/Utils/util.dart';
+import 'package:nk_app/pages/push_type_list.dart';
+import 'package:nk_app/pages/push_type.dart';
+import 'package:nk_app/pages/terms_agreement.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants/url_constants.dart';
 import 'firebase_options.dart';
@@ -13,8 +16,7 @@ import 'firebase_options.dart';
 import 'http/http_service.dart';
 import 'pages/login.dart';
 import 'pages/dashboard.dart';
-import 'pages/notifications.dart';
-import 'pages/notification_detail.dart';
+import 'pages/push_type_detail.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -103,9 +105,7 @@ Future<void> handleMessage(RemoteMessage message) async {
 }
 
 void updateBadge(int unreadCount) {
-  print("========= updateBadge =========");
   if (unreadCount > 0) {
-    print("========= updateBadgeCount $unreadCount =========");
     FlutterAppBadger.updateBadgeCount(unreadCount);
   } else {
     FlutterAppBadger.removeBadge();
@@ -123,9 +123,11 @@ class MyApp extends StatelessWidget {
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/terms': (context) => const TermsAgreementScreen(),
         '/dashboard': (context) => const DashboardScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-        '/notificationDetail': (context) => const NotificationDetailScreen(),
+        '/push_type': (context) => const PushTypeScreen(),
+        '/push_type_list': (context) => const PushTypeListScreen(),
+        '/push_type_detail': (context) => const PushTypeDetailScreen(),
       },
     );
   }
@@ -184,9 +186,8 @@ class SplashScreenState extends State<SplashScreen> {
     String? token = prefs.getString('fcm_token');
 
     if (token != null) {
-      print('=========== token = $token ===========');
-      var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.saveTokenEndPoint)
-          .toString();
+      var url =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
       var response = await HttpService.post(url, {
         'id': userId,
         'token': token,

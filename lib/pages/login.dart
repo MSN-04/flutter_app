@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Utils/util.dart';
@@ -24,6 +26,14 @@ class LoginScreenState extends State<LoginScreen> {
   final FocusNode otpFocusNode = FocusNode();
 
   bool isLoading = false;
+  String? selectedComp;
+  final Map<String, String> comps = {
+    'NK': 'NK',
+    'KHNT': 'KHNT',
+    'ENK': 'ENK',
+    'TS': 'The Safety',
+    'TECH': 'NK Tech'
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +50,34 @@ class LoginScreenState extends State<LoginScreen> {
                 height: 100,
               ),
               const SizedBox(height: 40),
+              DropdownButtonFormField<String>(
+                value: selectedComp,
+                items: comps.entries.map((entry) {
+                  return DropdownMenuItem<String>(
+                    value: entry.value,
+                    child: Text(entry.key,
+                        style: const TextStyle(color: Colors.white)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedComp = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: '회사',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                dropdownColor: const Color(
+                    0xFF004A99), // Background color for dropdown items
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: idController,
                 focusNode: idFocusNode,
@@ -77,7 +115,7 @@ class LoginScreenState extends State<LoginScreen> {
                 controller: otpController,
                 focusNode: otpFocusNode,
                 decoration: InputDecoration(
-                  labelText: 'OTP CODE(8자리)',
+                  labelText: 'OTP CODE(6자리)',
                   labelStyle: const TextStyle(color: Colors.white70),
                   filled: true,
                   fillColor: Colors.white.withOpacity(0.1),
@@ -123,8 +161,10 @@ class LoginScreenState extends State<LoginScreen> {
       bool tokenSaveSuccess = await sendTokenToServer(idController.text);
       if (mounted) Navigator.pop(context);
 
+      await checkBiometrics();
+
       if (tokenSaveSuccess && mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushReplacementNamed(context, '/terms');
       } else {
         Util.showErrorAlert("Token Failed");
       }
@@ -168,12 +208,12 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<bool> attemptLogin() async {
-    var url =
-        Uri.parse(UrlConstants.apiUrl + UrlConstants.loginEndPoint).toString();
+    var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.login).toString();
     var response = await HttpService.post(url, {
       'id': idController.text,
       'password': passwordController.text,
       'otpCode': otpController.text,
+      'comp': selectedComp
     });
     if (response.statusCode == 200) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -182,10 +222,9 @@ class LoginScreenState extends State<LoginScreen> {
       if (data['resultState'] == "Y") {
         var unreadNotifications = await fetchUnreadNotifications();
         prefs.setInt('unread_notifications', unreadNotifications);
-        print(
-            "========= unread_notifications : $unreadNotifications =========");
         updateBadge(unreadNotifications); // 앱 아이콘에 배지 표시
 
+        prefs.setString('comp', selectedComp ?? 'NK');
         return true;
       } else {
         Util.showErrorAlert(data['resultMessage']);
@@ -195,8 +234,7 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<int> fetchUnreadNotifications() async {
-    var url = Uri.parse(
-            UrlConstants.apiUrl + UrlConstants.unreadNotificationsEndPoint)
+    var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardUnread)
         .toString();
     var response = await HttpService.get('$url/${idController.text}');
     if (response.statusCode == 200) {
@@ -211,8 +249,8 @@ class LoginScreenState extends State<LoginScreen> {
     String? token = prefs.getString('fcm_token');
 
     if (token != null) {
-      var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.saveTokenEndPoint)
-          .toString();
+      var url =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
       var response = await HttpService.post(url, {
         'id': userId,
         'token': token,
@@ -227,6 +265,27 @@ class LoginScreenState extends State<LoginScreen> {
       }
     }
     return false;
+  }
+
+  Future<void> checkBiometrics() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    bool canCheckBiometrics = false;
+    List<BiometricType> availableBiometrics;
+
+    try {
+      canCheckBiometrics = await auth.canCheckBiometrics;
+    } on PlatformException catch (e) {
+      print(e);
+    }
+
+    if (canCheckBiometrics) {
+      try {
+        availableBiometrics = await auth.getAvailableBiometrics();
+        print(availableBiometrics);
+      } on PlatformException catch (e) {
+        print(e);
+      }
+    }
   }
 
   @override
