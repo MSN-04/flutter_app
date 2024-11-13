@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -20,9 +21,13 @@ import 'pages/push_type_detail.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
-  await Firebase.initializeApp();
+  // Firebase가 이미 초기화되어 있는지 확인
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      name: "nk-push-app-dev",
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   int unreadCount = prefs.getInt('unread_notifications') ?? 0;
@@ -35,12 +40,21 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  // Firebase가 이미 초기화되어 있는지 확인
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      name: "nk-push-app-dev",
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
   // FCM 초기화 및 토큰 저장
   await initializeFCMToken();
+
+  // FirebaseMessaging의 백그라운드 메시지 핸들러 설정
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   runApp(const MyApp());
 }
 
@@ -67,7 +81,14 @@ Future<void> initializeFCMToken() async {
     print('User declined or has not accepted permission');
   }
 
-  String? token = await messaging.getToken();
+  String? token = null;
+  if (Platform.isAndroid) {
+    token = await messaging.getToken();
+  } else {
+    token = await messaging.getAPNSToken();
+  }
+  ;
+
   if (token != null) {
     print("FCM Token: $token");
     SharedPreferences prefs = await SharedPreferences.getInstance();

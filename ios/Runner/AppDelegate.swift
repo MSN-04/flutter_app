@@ -1,5 +1,8 @@
+// AppDelegate.swift
+
 import Flutter
 import UIKit
+// import FirebaseCore // Firebase 초기화가 필요하지 않다면 주석 처리
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -7,7 +10,8 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FirebaseApp.configure()
+    // FirebaseApp.configure() // 중복 초기화 방지를 위해 주석 처리 또는 제거
+
     UNUserNotificationCenter.current().delegate = self
     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
       if granted {
@@ -16,12 +20,14 @@ import UIKit
         }
       }
     }
+
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
-  func userNotificationCenter(_ center: UNUserNotificationCenter, 
-                              willPresent notification: UNNotification, 
-                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    completionHandler([.badge, .alert, .sound]) // 배지 포함하여 표시
+
+  override func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                       willPresent notification: UNNotification,
+                                       withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    completionHandler([.badge, .alert, .sound]) // 알림을 활성화 상태에서도 표시
   }
 }
