@@ -14,22 +14,47 @@ class TermsAgreementScreen extends StatefulWidget {
 }
 
 class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
-  bool isScrolledToEnd1 = false;
-  bool isScrolledToEnd2 = false;
-  bool isChecked1 = false;
-  bool isChecked2 = false;
+  List<bool> isScrolledToEndList = [];
+  List<bool> isCheckedList = [];
+  List<dynamic> termsList = [];
+  List<int> tosIdList = [];
   Map<String, dynamic>? userData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTerms();
+  }
+
+  Future<void> _fetchTerms() async {
+    try {
+      var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.getTos);
+      var response = await HttpService.get(url.toString());
+      if (response.statusCode == 200) {
+        termsList = jsonDecode(response.body);
+        for (var term in termsList) {
+          tosIdList.add(term['TOS_ID']);
+        }
+        setState(() {
+          isScrolledToEndList = List<bool>.filled(termsList.length, false);
+          isCheckedList = List<bool>.filled(termsList.length, false);
+        });
+      } else {
+        Util.showErrorAlert("Failed to load terms");
+      }
+    } catch (e) {
+      Util.showErrorAlert("Error loading terms: $e");
+    }
+  }
 
   void _submitAgreement() async {
     bool success = await _sendAgreementData();
     if (success) {
       Navigator.pushReplacementNamed(context, '/dashboard');
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString("tosAgreeDate", DateTime.now().toString());
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("동의 저장 실패")));
-      _rejectAgreement;
+      _rejectAgreement();
     }
   }
 
@@ -44,7 +69,8 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
     userData = await loadUserData();
     var response = await HttpService.post(url, {
       'userId': userData?['PSPSN_NO'],
-      'termYn': isChecked1 && isChecked2,
+      'tosId': tosIdList,
+      'termYn': isCheckedList.every((isChecked) => isChecked),
     });
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
@@ -61,7 +87,6 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("user");
     prefs.remove("comp");
-    // 로그인 데이터 삭제 후 로그인 페이지로 이동
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
@@ -78,93 +103,79 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
+        child: termsList.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
                 children: [
-                  _buildAgreementSection(
-                    "약관 1",
-                    "약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다.약관 1 내용입니다. 약관의 내용이 길어질 경우 스크롤이 적용됩니다...",
-                    isScrolledToEnd1,
-                    (value) {
-                      setState(() {
-                        isScrolledToEnd1 = value;
-                      });
-                    },
-                    (value) {
-                      setState(() {
-                        isChecked1 = value!;
-                      });
-                    },
-                    isChecked1,
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: termsList.length,
+                      itemBuilder: (context, index) => _buildAgreementSection(
+                        termsList[index]['TOS_TITLE'] ?? "약관 ${index + 1}",
+                        termsList[index]['TOS_BODY'] ?? "",
+                        isScrolledToEndList[index],
+                        (value) {
+                          setState(() {
+                            isScrolledToEndList[index] = value;
+                          });
+                        },
+                        (value) {
+                          setState(() {
+                            isCheckedList[index] = value!;
+                          });
+                        },
+                        isCheckedList[index],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _buildAgreementSection(
-                    "약관 2",
-                    "약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...",
-                    isScrolledToEnd2,
-                    (value) {
-                      setState(() {
-                        isScrolledToEnd2 = value;
-                      });
-                    },
-                    (value) {
-                      setState(() {
-                        isChecked2 = value!;
-                      });
-                    },
-                    isChecked2,
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: isCheckedList.every((isChecked) => isChecked)
+                          ? _submitAgreement
+                          : null,
+                      child: const Text(
+                        "동의합니다.",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: _rejectAgreement,
+                      child: const Text(
+                        "동의하지 않습니다.",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black26,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: (isChecked1 && isChecked2) ? _submitAgreement : null,
-                child: const Text(
-                  "동의합니다.",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: _rejectAgreement,
-                child: const Text(
-                  "동의하지 않습니다.",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black26,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -189,26 +200,38 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
         ),
         const SizedBox(height: 8),
         Container(
-          width: double.infinity, // 화면 너비를 가득 채움
-          height: 200, // 고정 높이
+          width: double.infinity,
+          height: 400,
           decoration: BoxDecoration(
             border: Border.all(color: const Color.fromARGB(255, 179, 179, 179)),
             borderRadius: BorderRadius.circular(8.0),
           ),
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification scrollInfo) {
-              if (scrollInfo.metrics.pixels ==
-                  scrollInfo.metrics.maxScrollExtent) {
-                onScrollEnd(true);
-              }
-              return true;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Use Future.microtask to set the scrolled-to-end status if content is too short
+              Future.microtask(() {
+                if (content.length < constraints.maxHeight ~/ 20) {
+                  // Assume 20 pixels per line as a rough height
+                  onScrollEnd(true);
+                }
+              });
+
+              return NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  if (scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent) {
+                    onScrollEnd(true);
+                  }
+                  return true;
+                },
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(content),
+                  ),
+                ),
+              );
             },
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(content),
-              ),
-            ),
           ),
         ),
         if (isScrolledToEnd)

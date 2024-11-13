@@ -3,6 +3,7 @@ class UrlConstants {
 
   static const String login = "/Login";
   static const String saveTos = "/Login/tos";
+  static const String getTos = "/Login/tos";
 
   static const String saveToken = "/Token";
 

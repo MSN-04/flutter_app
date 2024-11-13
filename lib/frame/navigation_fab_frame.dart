@@ -58,6 +58,12 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     }
   }
 
+  Future<Map<String, dynamic>> loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userData = prefs.getString('user');
+    return userData != null ? jsonDecode(userData) : {};
+  }
+
   bool _shouldAuthenticate(Duration timeout) {
     if (_lastAuthenticatedTime == null) return true;
     final timeSinceLastAuth =
@@ -108,27 +114,18 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
   Future<bool> _checkLogoutConditions() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? tosAgreeDate = prefs.getString("tosAgreeDate");
-      DateTime agreeDate = DateTime.now();
-      if (tosAgreeDate != null) {
-        agreeDate = DateTime.parse(tosAgreeDate);
-      } else {
-        // 기본값 설정 또는 예외 처리
-        print("No date found in SharedPreferences.");
+      final url =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.getTos).toString();
+      final response = await HttpService.get('$url/${userData?['PSPSN_NO']}}');
+      bool checkTos = false;
+      if (response.statusCode == 200) {
+        checkTos = json.decode(response.body);
       }
-      var dif = const Duration(days: 365);
-      return DateTime.now().difference(agreeDate) >= dif;
+      return checkTos;
     } catch (e) {
       print("Error checking logout conditions: $e");
       return false;
     }
-  }
-
-  Future<Map<String, dynamic>> loadUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userData = prefs.getString('user');
-    return userData != null ? jsonDecode(userData) : {};
   }
 
   Future<void> _fetchPendingTasks() async {

@@ -164,18 +164,14 @@ class LoginScreenState extends State<LoginScreen> {
       await checkBiometrics();
 
       if (tokenSaveSuccess && mounted) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? tosAgreeDate = prefs.getString("tosAgreeDate");
-        DateTime agreeDate = DateTime.now();
-        if (tosAgreeDate != null) {
-          agreeDate = DateTime.parse(tosAgreeDate);
-        } else {
-          // 기본값 설정 또는 예외 처리
-          print("No date found in SharedPreferences.");
+        final url =
+            Uri.parse(UrlConstants.apiUrl + UrlConstants.getTos).toString();
+        final response = await HttpService.get('$url/${idController.text}');
+        bool checkTos = false;
+        if (response.statusCode == 200) {
+          checkTos = json.decode(response.body);
         }
-
-        var dif = const Duration(days: 365);
-        if (DateTime.now().difference(agreeDate) >= dif) {
+        if (!checkTos) {
           Navigator.pushReplacementNamed(context, '/terms');
         } else {
           Navigator.pushReplacementNamed(context, '/dashboard');
