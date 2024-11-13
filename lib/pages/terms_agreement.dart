@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:nk_app/Utils/util.dart';
+import 'package:nk_app/constants/url_constants.dart';
+import 'package:nk_app/http/http_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TermsAgreementScreen extends StatefulWidget {
@@ -13,22 +18,43 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
   bool isScrolledToEnd2 = false;
   bool isChecked1 = false;
   bool isChecked2 = false;
+  Map<String, dynamic>? userData;
 
   void _submitAgreement() async {
-    Navigator.pushReplacementNamed(context, '/dashboard');
-    // 동의 내용을 API로 전송 (가상 요청)
     bool success = await _sendAgreementData();
     if (success) {
       Navigator.pushReplacementNamed(context, '/dashboard');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString("tosAgreeDate", DateTime.now().toString());
     } else {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("동의 저장 실패")));
+          .showSnackBar(const SnackBar(content: Text("동의 저장 실패")));
+      _rejectAgreement;
     }
   }
 
+  Future<Map<String, dynamic>> loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userData = prefs.getString('user');
+    return userData != null ? jsonDecode(userData) : {};
+  }
+
   Future<bool> _sendAgreementData() async {
-    await Future.delayed(Duration(seconds: 1));
-    return true;
+    var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.saveTos).toString();
+    userData = await loadUserData();
+    var response = await HttpService.post(url, {
+      'userId': userData?['PSPSN_NO'],
+      'termYn': isChecked1 && isChecked2,
+    });
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      if (data['resultState'] == "Y") {
+        return true;
+      } else {
+        Util.showErrorAlert(data['resultMessage']);
+      }
+    }
+    return false;
   }
 
   Future<void> _rejectAgreement() async {
@@ -73,7 +99,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                     },
                     isChecked1,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   _buildAgreementSection(
                     "약관 2",
                     "약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다.약관 2 내용입니다. 이곳 역시 스크롤이 적용됩니다...",
@@ -93,7 +119,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -115,7 +141,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -161,7 +187,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity, // 화면 너비를 가득 채움
           height: 200, // 고정 높이
@@ -192,7 +218,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                 value: isChecked,
                 onChanged: onCheckboxChanged,
               ),
-              Text("동의합니다"),
+              const Text("동의합니다"),
             ],
           ),
       ],

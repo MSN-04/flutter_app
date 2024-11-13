@@ -164,7 +164,23 @@ class LoginScreenState extends State<LoginScreen> {
       await checkBiometrics();
 
       if (tokenSaveSuccess && mounted) {
-        Navigator.pushReplacementNamed(context, '/terms');
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? tosAgreeDate = prefs.getString("tosAgreeDate");
+        DateTime agreeDate = DateTime.now();
+        if (tosAgreeDate != null) {
+          agreeDate = DateTime.parse(tosAgreeDate);
+        } else {
+          // 기본값 설정 또는 예외 처리
+          print("No date found in SharedPreferences.");
+        }
+
+        var dif = const Duration(days: 365);
+        if (DateTime.now().difference(agreeDate) >= dif) {
+          Navigator.pushReplacementNamed(context, '/terms');
+        } else {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+        ;
       } else {
         Util.showErrorAlert("Token Failed");
       }
@@ -267,6 +283,7 @@ class LoginScreenState extends State<LoginScreen> {
     return false;
   }
 
+//테스트
   Future<void> checkBiometrics() async {
     final LocalAuthentication auth = LocalAuthentication();
     bool canCheckBiometrics = false;
