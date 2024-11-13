@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-
 class UrlConstants {
   static const String apiUrl = "http://192.168.0.227:1112/api";
 
   static const String login = "/Login";
+  static const String saveTos = "/Login/tos";
 
   static const String saveToken = "/Token";
 

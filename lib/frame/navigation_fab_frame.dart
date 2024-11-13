@@ -1,10 +1,11 @@
-// lib/components/navigation_fab_frame.dart
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:nk_app/Utils/util.dart';
 import 'package:nk_app/constants/url_constants.dart';
+import 'package:nk_app/http/http_service.dart';
 import 'dart:convert';
 
-import 'package:nk_app/http/http_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NavigationFABFrame extends StatefulWidget {
   final Widget child;
@@ -15,13 +16,119 @@ class NavigationFABFrame extends StatefulWidget {
   _NavigationFABFrameState createState() => _NavigationFABFrameState();
 }
 
-class _NavigationFABFrameState extends State<NavigationFABFrame> {
+class _NavigationFABFrameState extends State<NavigationFABFrame>
+    with WidgetsBindingObserver {
   List<Map<String, dynamic>> menus = [];
+  final LocalAuthentication auth = LocalAuthentication();
+  DateTime? _lastAuthenticatedTime;
+  static const _authTimeout = Duration(minutes: 1); // 인증 타임아웃 (예: 1분)
+  static const _noAuthTimeout = Duration(hours: 15); // 인증 타임아웃 (예: 1분)
+  Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Lifecycle Observer 등록
     _fetchPendingTasks(); // 데이터 가져오기
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Observer 제거
+    super.dispose();
+  }
+
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    var logout = false; //true 면 로그아웃이다
+    if (state == AppLifecycleState.resumed) {
+      bool isDeviceSupported = await auth.isDeviceSupported();
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      if (!isDeviceSupported) {
+        logout = _shouldAuthenticate(_noAuthTimeout);
+      } else if (!canCheckBiometrics) {
+        logout = _shouldAuthenticate(_authTimeout);
+      } else {
+        logout = _shouldAuthenticate(_authTimeout);
+      }
+
+      if (logout) {
+        _handleAppResume();
+      }
+    }
+  }
+
+  bool _shouldAuthenticate(Duration timeout) {
+    if (_lastAuthenticatedTime == null) return true;
+    final timeSinceLastAuth =
+        DateTime.now().difference(_lastAuthenticatedTime!);
+    return timeSinceLastAuth >= timeout;
+  }
+
+  Future<void> _handleAppResume() async {
+    bool isDeviceSupported = await auth.isDeviceSupported();
+    bool canCheckBiometrics = await auth.canCheckBiometrics;
+    if (!isDeviceSupported) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    } else if (!canCheckBiometrics) {
+      // 생체 인증을 사용할 수 없는 경우 사용자에게 안내 메시지를 표시
+      Util.showAlert('생체 인증이 활성화되지 않았습니다. 설정에서 활성화해주세요.');
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    } else {
+      bool authenticated = await _authenticateUser();
+
+      if (authenticated) {
+        _lastAuthenticatedTime = DateTime.now(); // 인증 성공 시각 갱신
+        bool shouldLogout = await _checkLogoutConditions();
+        if (shouldLogout) {
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (route) => false);
+        }
+      } else {
+        // 인증 실패 시 로그인 화면으로 전환
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    }
+  }
+
+  Future<bool> _authenticateUser() async {
+    try {
+      return await auth.authenticate(
+        localizedReason: '앱을 사용하기 위해 생체 인증이 필요합니다',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } catch (e) {
+      print("Authentication error: $e");
+      return false;
+    }
+  }
+
+  Future<bool> _checkLogoutConditions() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? tosAgreeDate = prefs.getString("tosAgreeDate");
+      DateTime agreeDate = DateTime.now();
+      if (tosAgreeDate != null) {
+        agreeDate = DateTime.parse(tosAgreeDate);
+      } else {
+        // 기본값 설정 또는 예외 처리
+        print("No date found in SharedPreferences.");
+      }
+      var dif = const Duration(days: 365);
+      return DateTime.now().difference(agreeDate) >= dif;
+    } catch (e) {
+      print("Error checking logout conditions: $e");
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userData = prefs.getString('user');
+    return userData != null ? jsonDecode(userData) : {};
   }
 
   Future<void> _fetchPendingTasks() async {
@@ -50,7 +157,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Container(
+            SizedBox(
               height: 120,
               child: DrawerHeader(
                 decoration: const BoxDecoration(color: Color(0xFF004A99)),
@@ -104,8 +211,8 @@ class _NavigationFABFrameState extends State<NavigationFABFrame> {
             onPressed: () {
               Scaffold.of(context).openEndDrawer();
             },
-            child: const Icon(Icons.menu),
             backgroundColor: const Color(0xFF8cc63f),
+            child: const Icon(Icons.menu),
           );
         },
       ),
