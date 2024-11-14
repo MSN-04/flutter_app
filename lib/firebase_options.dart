@@ -47,29 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBpjo1udXBm2nbZmOJkCB8eQAjLt5HX7r8',
-    appId: '1:922670014152:web:842adda819dc2b71e40ffd',
-    messagingSenderId: '922670014152',
-    projectId: 'nk-push-app-dev',
-    authDomain: 'nk-push-app-dev.firebaseapp.com',
-    storageBucket: 'nk-push-app-dev.appspot.com',
-    measurementId: 'G-R23KB554X0',
+    apiKey: 'AIzaSyC1_ZRyvRyyx4iPWJfQqhftadk4Ak4w9Ac',
+    appId: '1:355661409196:web:d5822639733ca6c5a1e809',
+    messagingSenderId: '355661409196',
+    projectId: 'nk-push-app-prod',
+    authDomain: 'nk-push-app-prod.firebaseapp.com',
+    storageBucket: 'nk-push-app-prod.firebasestorage.app',
+    measurementId: 'G-2NEHHE7KS5',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBC2QUbhJSPFyMCskEckigvqAf3D379Pbk',
-    appId: '1:922670014152:android:77478ad6742a2872e40ffd',
-    messagingSenderId: '922670014152',
-    projectId: 'nk-push-app-dev',
-    storageBucket: 'nk-push-app-dev.appspot.com',
+    apiKey: 'AIzaSyAMFebI6ziqsONY2TNzMxnqMDuEqC3UGiI',
+    appId: '1:355661409196:android:da67251f80ffe41ba1e809',
+    messagingSenderId: '355661409196',
+    projectId: 'nk-push-app-prod',
+    storageBucket: 'nk-push-app-prod.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB1IBJCUyfqeLGjY2TMYeX5OAaDFi_UY34',
-    appId: '1:922670014152:ios:0accad97d6085a3fe40ffd',
-    messagingSenderId: '922670014152',
-    projectId: 'nk-push-app-dev',
-    storageBucket: 'nk-push-app-dev.appspot.com',
-    iosBundleId: 'com.example.nkApp',
+    apiKey: 'AIzaSyCFLKiUwYMs0AFzBKrOXXcR_7xlWtnZfzc',
+    appId: '1:355661409196:ios:a7bf1860d8829ce1a1e809',
+    messagingSenderId: '355661409196',
+    projectId: 'nk-push-app-prod',
+    storageBucket: 'nk-push-app-prod.firebasestorage.app',
+    iosBundleId: 'nk.nkPushApp',
   );
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:nk_app/Utils/util.dart';
-import 'package:nk_app/constants/url_constants.dart';
-import 'package:nk_app/http/http_service.dart';
+import 'package:nk_push_app/Utils/util.dart';
+import 'package:nk_push_app/constants/url_constants.dart';
+import 'package:nk_push_app/http/http_service.dart';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';

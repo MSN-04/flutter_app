@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:nk_app/Utils/util.dart';
-import 'package:nk_app/constants/url_constants.dart';
-import 'package:nk_app/http/http_service.dart';
+import 'package:nk_push_app/Utils/util.dart';
+import 'package:nk_push_app/constants/url_constants.dart';
+import 'package:nk_push_app/http/http_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TermsAgreementScreen extends StatefulWidget {
@@ -241,7 +241,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                 value: isChecked,
                 onChanged: onCheckboxChanged,
               ),
-              const Text("동의합니다"),
+              const Text("이용약관과 개인정보 수집 및 이용에 모두 동의합니다."),
             ],
           ),
       ],

@@ -1,6 +1,6 @@
 {
-    "name": "nk_app",
-    "short_name": "nk_app",
+    "name": "nk_push_app",
+    "short_name": "nk_push_app",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
