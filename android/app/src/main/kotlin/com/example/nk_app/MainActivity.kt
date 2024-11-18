@@ -1,4 +1,4 @@
-package com.example.nk_app
+package nk.nk_push_app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine

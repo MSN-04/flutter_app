@@ -1,59 +1,21 @@
 {
   "project_info": {
-    "project_number": "922670014152",
-    "project_id": "nk-push-app-dev",
-    "storage_bucket": "nk-push-app-dev.appspot.com"
+    "project_number": "355661409196",
+    "project_id": "nk-push-app-prod",
+    "storage_bucket": "nk-push-app-prod.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:922670014152:android:77478ad6742a2872e40ffd",
+        "mobilesdk_app_id": "1:355661409196:android:d6bfcb3626c75005a1e809",
         "android_client_info": {
-          "package_name": "com.example.nk_app"
+          "package_name": "nk.nk_push_app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBC2QUbhJSPFyMCskEckigvqAf3D379Pbk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:922670014152:android:f2f43f3ed3067cb8e40ffd",
-        "android_client_info": {
-          "package_name": "com.example.push_app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBC2QUbhJSPFyMCskEckigvqAf3D379Pbk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:922670014152:android:8ad25601e23adf52e40ffd",
-        "android_client_info": {
-          "package_name": "om.example.push_app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBC2QUbhJSPFyMCskEckigvqAf3D379Pbk"
+          "current_key": "AIzaSyAMFebI6ziqsONY2TNzMxnqMDuEqC3UGiI"
         }
       ],
       "services": {

@@ -155,40 +155,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(
-                            top: 15.0, left: 12.0, right: 12.0, bottom: 12.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0), // Remove bottom padding here
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '최근 알림',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    '최근 알림',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Badge(
-                                  label: Text(unreadCnt),
-                                  backgroundColor: Colors.blueAccent,
-                                  child: const Icon(Icons.mark_email_unread),
-                                ),
-                                const SizedBox(width: 8),
-                                Badge(
-                                  label: Text(unCheckCnt),
-                                  backgroundColor: Colors.redAccent,
-                                  child: const Icon(Icons.report),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Badge(
+                                    label: Text(unreadCnt),
+                                    backgroundColor: Colors.blueAccent,
+                                    child: const Icon(Icons.mark_email_unread),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Badge(
+                                    label: Text(unCheckCnt),
+                                    backgroundColor: Colors.redAccent,
+                                    child: const Icon(Icons.report),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 8),
+
+                            const SizedBox(
+                                height:
+                                    8), // Adjust this or remove if not needed
                             Expanded(
                               child: RefreshIndicator(
                                 onRefresh: _refreshPushData,
                                 child: ListView.builder(
+                                  padding: EdgeInsets
+                                      .zero, // Ensure no extra padding in the ListView
                                   itemCount: pushs.length,
                                   itemBuilder: (context, index) {
                                     var push = pushs[index];
