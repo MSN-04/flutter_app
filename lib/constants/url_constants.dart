@@ -1,5 +1,5 @@
 class UrlConstants {
-  static const String apiUrl = "https://pushapp.nkcf.com//api";
+  static const String apiUrl = "https://pushapp.nkcf.com/api";
 
   static const String login = "/Login";
   static const String saveTos = "/Login/tos";

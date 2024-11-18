@@ -185,11 +185,10 @@ packages:
   flutter_app_badger:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "33cbee6"
-      resolved-ref: "33cbee625e279b77ad80c6486f93fc154f1bb04a"
-      url: "https://github.com/g123k/flutter_app_badger.git"
-    source: git
+      name: flutter_app_badger
+      sha256: "64d4a279bab862ed28850431b9b446b9820aaae0bf363322d51077419f930fa8"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.5.0"
   flutter_launcher_icons:
     dependency: "direct main"

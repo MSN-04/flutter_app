@@ -20,6 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   String unreadCnt = '0';
   String unCheckCnt = '0';
+  String comp = '';
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<Map<String, dynamic>> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userData = prefs.getString('user');
+    comp = prefs.getString('comp').toString();
     return userData != null ? jsonDecode(userData) : {};
   }
 
@@ -99,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CircleAvatar(
                               radius: 40,
                               backgroundImage: NetworkImage(
-                                '${Util.getPictureUrl()}${userData!['PSPSN_PICTURE']}',
+                                '${getPictureUrl()}${userData!['PSPSN_PICTURE'].toString()}',
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -195,74 +197,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Expanded(
                               child: RefreshIndicator(
                                 onRefresh: _refreshPushData,
-                                child: ListView.builder(
-                                  padding: EdgeInsets
-                                      .zero, // Ensure no extra padding in the ListView
-                                  itemCount: pushs.length,
-                                  itemBuilder: (context, index) {
-                                    var push = pushs[index];
-                                    return Card(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 4),
-                                      child: ListTile(
-                                        leading: Icon(
-                                          Util.getIcon(
-                                              push['PUSH_ICON'] ?? 'null'),
-                                          color: push['PUSH_CHK'] == false
-                                              ? Colors.redAccent
-                                              : push['PUSH_READ'] == false
-                                                  ? Colors.blueAccent
-                                                  : Colors.grey,
+                                child: pushs.isEmpty
+                                    ? const Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.notifications_off,
+                                                size: 64, color: Colors.grey),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              '알림이 없습니다',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        title: Text(
-                                          push['PUSH_TITLE'] ?? '알림 제목',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontWeight:
-                                                push['PUSH_CHK'] == false
-                                                    ? FontWeight.bold
+                                      )
+                                    : ListView.builder(
+                                        padding: EdgeInsets
+                                            .zero, // Ensure no extra padding in the ListView
+                                        itemCount: pushs.length,
+                                        itemBuilder: (context, index) {
+                                          var push = pushs[index];
+                                          return Card(
+                                            margin: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                            child: ListTile(
+                                              leading: Icon(
+                                                Util.getIcon(
+                                                    push['PUSH_ICON'] ??
+                                                        'null'),
+                                                color: push['PUSH_CHK'] == false
+                                                    ? Colors.redAccent
                                                     : push['PUSH_READ'] == false
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          push['PUSH_CONTENTS'] ?? '알림 내용',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontWeight:
-                                                push['PUSH_CHK'] == false
-                                                    ? FontWeight.bold
-                                                    : push['PUSH_READ'] == false
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                          ),
-                                        ),
-                                        trailing: Text(
-                                          Util.formatDate(
-                                              push['PUSH_SEND_DATE']),
-                                          style: TextStyle(
-                                              color: Colors.grey[600]),
-                                        ),
-                                        onTap: () async {
-                                          await Util.markNotificationAsRead();
-                                          await setPushRead(push['PUSH_ID']);
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/push_type_detail',
-                                            arguments: push,
-                                          ).then((_) {
-                                            setState(() {
-                                              push['PUSH_READ'] = true;
-                                            });
-                                          });
+                                                        ? Colors.blueAccent
+                                                        : Colors.grey,
+                                              ),
+                                              title: Text(
+                                                push['PUSH_TITLE'] ?? '알림 제목',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontWeight:
+                                                      push['PUSH_CHK'] == false
+                                                          ? FontWeight.bold
+                                                          : push['PUSH_READ'] ==
+                                                                  false
+                                                              ? FontWeight.bold
+                                                              : FontWeight
+                                                                  .normal,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                push['PUSH_CONTENTS'] ??
+                                                    '알림 내용',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontWeight:
+                                                      push['PUSH_CHK'] == false
+                                                          ? FontWeight.bold
+                                                          : push['PUSH_READ'] ==
+                                                                  false
+                                                              ? FontWeight.bold
+                                                              : FontWeight
+                                                                  .normal,
+                                                ),
+                                              ),
+                                              trailing: Text(
+                                                Util.formatDate(
+                                                    push['PUSH_SEND_DATE']),
+                                                style: TextStyle(
+                                                    color: Colors.grey[600]),
+                                              ),
+                                              onTap: () async {
+                                                await Util
+                                                    .markNotificationAsRead();
+                                                await setPushRead(
+                                                    push['PUSH_ID']);
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  '/push_type_detail',
+                                                  arguments: push,
+                                                ).then((_) {
+                                                  setState(() {
+                                                    push['PUSH_READ'] = true;
+                                                  });
+                                                });
+                                              },
+                                            ),
+                                          );
                                         },
                                       ),
-                                    );
-                                  },
-                                ),
                               ),
                             ),
                           ],
@@ -289,5 +318,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
     return false;
+  }
+
+  String getPictureUrl() {
+    switch (comp) {
+      case 'NK':
+        return 'https://ep.nkcf.com';
+      case 'KHNT':
+        return 'https://ep.nkspe.com';
+      case 'ENK':
+        return 'https://ep.enkcf.com';
+      case 'TS':
+        return 'https://ep.thesafety.com';
+      case 'TECH':
+        return 'https://ep.nkcng.com';
+      default:
+        return 'https://ep.nkcf.com';
+    }
   }
 }

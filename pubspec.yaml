@@ -16,12 +16,13 @@ dependencies:
   http: ^1.2.2
   intl: ^0.19.0
   flutter_launcher_icons: ^0.14.1
-  flutter_app_badger:
-    git:
-      url: https://github.com/g123k/flutter_app_badger.git
-      ref: 33cbee6
+  # flutter_app_badger:
+  #   git:
+  #     url: https://github.com/g123k/flutter_app_badger.git
+  #     ref: 7a36a76
   flutter_native_splash: ^2.4.2
   local_auth: ^2.3.0
+  flutter_app_badger: ^1.5.0
 
 dev_dependencies:
   flutter_test:
