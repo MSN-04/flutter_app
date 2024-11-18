@@ -1,7 +1,7 @@
 // lib/notification_detail_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:nk_app/http/http_service.dart';
+import 'package:nk_push_app/http/http_service.dart';
 
 import '../Utils/util.dart';
 import '../constants/url_constants.dart';
