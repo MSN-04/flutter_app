@@ -99,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CircleAvatar(
                               radius: 40,
                               backgroundImage: NetworkImage(
-                                '${UrlConstants.pictureUrl}${userData!['PSPSN_PICTURE']}',
+                                '${Util.getPictureUrl()}${userData!['PSPSN_PICTURE']}',
                               ),
                             ),
                             const SizedBox(width: 16),

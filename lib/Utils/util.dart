@@ -244,4 +244,24 @@ class Util {
       updateBadge(unreadCount);
     }
   }
+
+  static Future<String> getPictureUrl() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? comp = prefs.getString('comp');
+
+    switch (comp) {
+      case 'NK':
+        return 'ep.nkcf.com';
+      case 'KHNT':
+        return 'ep.nkspe.com';
+      case 'ENK':
+        return 'ep.enkcf.com';
+      case 'TS':
+        return 'ep.thesafety.com';
+      case 'TECH':
+        return 'ep.nkcng.com';
+      default:
+        return 'ep.nkcf.com';
+    }
+  }
 }
