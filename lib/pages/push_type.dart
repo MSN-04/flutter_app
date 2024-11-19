@@ -120,63 +120,81 @@ class PushTypeScreenState extends State<PushTypeScreen> {
             if (!_isLoading)
               RefreshIndicator(
                 onRefresh: _refreshPushTypeList,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: _pushTypeList.length,
-                  itemBuilder: (context, index) {
-                    var pushType = _pushTypeList[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 4, horizontal: 8),
-                      child: ListTile(
-                        leading: Icon(
-                          Util.getIcon(pushType['TYPE_ICON_D'] ?? 'null'),
-                        ),
-                        title: Text(
-                          pushType['TYPE_NAME_D'] ?? '알림 제목',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Text.rich(
-                          TextSpan(children: [
-                            TextSpan(
-                              text:
-                                  '미확인 (${pushType['PUSH_READ_COUNT'] ?? '0'})',
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
-                              ),
-                            ),
-                            TextSpan(
-                              text: '  ',
+                child: _pushTypeList.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_off,
+                                size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              '알림이 없습니다',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                fontSize: 18,
+                                color: Colors.grey,
                               ),
                             ),
-                            TextSpan(
-                              text:
-                                  '미처리 (${pushType['PUSH_CHK_COUNT'] ?? '0'})',
-                              style: const TextStyle(
-                                color: Colors.redAccent,
-                              ),
-                            ),
-                          ]),
+                          ],
                         ),
-                        onTap: () async {
-                          Navigator.pushNamed(
-                            context,
-                            '/push_type_list',
-                            arguments: pushType,
-                          ).then((_) {
-                            setState(() {
-                              pushType['PUSH_READ'] = 'Y';
-                            });
-                          });
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _pushTypeList.length,
+                        itemBuilder: (context, index) {
+                          var pushType = _pushTypeList[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
+                            child: ListTile(
+                              leading: Icon(
+                                Util.getIcon(pushType['TYPE_ICON_D'] ?? 'null'),
+                              ),
+                              title: Text(
+                                pushType['TYPE_NAME_D'] ?? '알림 제목',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Text.rich(
+                                TextSpan(children: [
+                                  TextSpan(
+                                    text:
+                                        '미확인 (${pushType['PUSH_READ_COUNT'] ?? '0'})',
+                                    style: const TextStyle(
+                                      color: Colors.blueAccent,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: '  ',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        '미처리 (${pushType['PUSH_CHK_COUNT'] ?? '0'})',
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                              onTap: () async {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/push_type_list',
+                                  arguments: pushType,
+                                ).then((_) {
+                                  setState(() {
+                                    pushType['PUSH_READ'] = 'Y';
+                                  });
+                                });
+                              },
+                            ),
+                          );
                         },
                       ),
-                    );
-                  },
-                ),
               ),
             // 초기 로딩 상태에만 중앙 스피너 표시
             if (_isLoading)

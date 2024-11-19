@@ -282,10 +282,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   context,
                                                   '/push_type_detail',
                                                   arguments: push,
-                                                ).then((_) {
-                                                  setState(() {
-                                                    push['PUSH_READ'] = true;
-                                                  });
+                                                ).then((result) {
+                                                  if (result != null &&
+                                                      result is bool &&
+                                                      result) {
+                                                    setState(() {
+                                                      _refreshPushData();
+                                                    });
+                                                  } else {
+                                                    setState(() {
+                                                      push['PUSH_READ'] = true;
+                                                    });
+                                                  }
                                                 });
                                               },
                                             ),

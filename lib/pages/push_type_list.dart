@@ -180,84 +180,112 @@ class PushTypeListScreenState extends State<PushTypeListScreen> {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: _refreshPushTypeList,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount:
-                            _applyFilter().length + (_isRefreshing ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _applyFilter().length && _isRefreshing) {
-                            return const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
+                      child: _applyFilter().isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.notifications_off,
+                                      size: 64, color: Colors.grey),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    '알림이 없습니다',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: _applyFilter().length +
+                                  (_isRefreshing ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == _applyFilter().length &&
+                                    _isRefreshing) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Center(
+                                        child: CircularProgressIndicator()),
+                                  );
+                                }
 
-                          var push = _applyFilter()[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 4, horizontal: 8),
-                            child: ListTile(
-                              leading: Icon(
-                                Util.getIcon(push['TYPE_ICON'] ?? 'null'),
-                                color: push['PUSH_CHK'] == false
-                                    ? Colors.redAccent
-                                    : push['PUSH_READ'] == false
-                                        ? Colors.blueAccent
-                                        : Colors.grey,
-                              ),
-                              title: Text(
-                                push['PUSH_TITLE'] ?? '알림 제목',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: push['PUSH_CHK'] == false
-                                      ? FontWeight.bold
-                                      : push['PUSH_READ'] == false
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: Text(
-                                push['PUSH_CONTENTS'] ?? '알림 내용',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: push['PUSH_CHK'] == false
-                                      ? FontWeight.bold
-                                      : push['PUSH_READ'] == false
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                              trailing: Text(
-                                Util.formatDate(push['PUSH_SEND_DATE']),
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontWeight: push['PUSH_CHK'] == false
-                                      ? FontWeight.bold
-                                      : push['PUSH_READ'] == false
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                              onTap: () async {
-                                await Util.markNotificationAsRead();
-                                await setPushRead(push['PUSH_ID']);
-                                Navigator.pushNamed(
-                                  context,
-                                  '/push_type_detail',
-                                  arguments: push,
-                                ).then((_) {
-                                  setState(() {
-                                    push['PUSH_READ'] = true;
-                                  });
-                                });
+                                var push = _applyFilter()[index];
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 8),
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Util.getIcon(push['TYPE_ICON'] ?? 'null'),
+                                      color: push['PUSH_CHK'] == false
+                                          ? Colors.redAccent
+                                          : push['PUSH_READ'] == false
+                                              ? Colors.blueAccent
+                                              : Colors.grey,
+                                    ),
+                                    title: Text(
+                                      push['PUSH_TITLE'] ?? '알림 제목',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: push['PUSH_CHK'] == false
+                                            ? FontWeight.bold
+                                            : push['PUSH_READ'] == false
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      push['PUSH_CONTENTS'] ?? '알림 내용',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: push['PUSH_CHK'] == false
+                                            ? FontWeight.bold
+                                            : push['PUSH_READ'] == false
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    trailing: Text(
+                                      Util.formatDate(push['PUSH_SEND_DATE']),
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontWeight: push['PUSH_CHK'] == false
+                                            ? FontWeight.bold
+                                            : push['PUSH_READ'] == false
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    onTap: () async {
+                                      await Util.markNotificationAsRead();
+                                      await setPushRead(push['PUSH_ID']);
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/push_type_detail',
+                                        arguments: push,
+                                      ).then((result) {
+                                        if (result != null &&
+                                            result is bool &&
+                                            result) {
+                                          setState(() {
+                                            _refreshPushTypeList();
+                                          });
+                                        } else {
+                                          setState(() {
+                                            push['PUSH_READ'] = true;
+                                          });
+                                        }
+                                      });
+                                    },
+                                  ),
+                                );
                               },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ),
                 ],

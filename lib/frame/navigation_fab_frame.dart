@@ -21,8 +21,8 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   List<Map<String, dynamic>> menus = [];
   final LocalAuthentication auth = LocalAuthentication();
   DateTime? _lastAuthenticatedTime;
-  static const _authTimeout = Duration(minutes: 1); // 인증 타임아웃 (예: 1분)
-  static const _noAuthTimeout = Duration(hours: 15); // 인증 타임아웃 (예: 1분)
+  static const _authTimeout = Duration(minutes: 10);
+  static const _noAuthTimeout = Duration(hours: 8);
   Map<String, dynamic>? userData;
 
   @override
@@ -30,6 +30,11 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     super.initState();
     WidgetsBinding.instance.addObserver(this); // Lifecycle Observer 등록
     _fetchPendingTasks(); // 데이터 가져오기
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    userData = await loadUserData();
   }
 
   @override
@@ -55,6 +60,11 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
       if (logout) {
         _handleAppResume();
       }
+    }
+
+    if (state == AppLifecycleState.detached ||
+        state == AppLifecycleState.resumed) {
+      _lastAuthenticatedTime = DateTime.now();
     }
   }
 
@@ -82,11 +92,10 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } else {
       bool authenticated = await _authenticateUser();
-
       if (authenticated) {
         _lastAuthenticatedTime = DateTime.now(); // 인증 성공 시각 갱신
         bool shouldLogout = await _checkLogoutConditions();
-        if (shouldLogout) {
+        if (!shouldLogout) {
           Navigator.pushNamedAndRemoveUntil(
               context, '/login', (route) => false);
         }
@@ -116,7 +125,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     try {
       final url =
           Uri.parse(UrlConstants.apiUrl + UrlConstants.getTos).toString();
-      final response = await HttpService.get('$url/${userData?['PSPSN_NO']}}');
+      final response = await HttpService.get('$url/${userData?['PSPSN_NO']}');
       bool checkTos = false;
       if (response.statusCode == 200) {
         checkTos = json.decode(response.body);
