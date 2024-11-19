@@ -7,8 +7,9 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// 네비게이션 및 플로팅 액션 버튼을 포함한 화면의 공통 프레임
 class NavigationFABFrame extends StatefulWidget {
-  final Widget child;
+  final Widget child; // 화면의 주요 내용을 포함하는 위젯
 
   const NavigationFABFrame({super.key, required this.child});
 
@@ -18,62 +19,78 @@ class NavigationFABFrame extends StatefulWidget {
 
 class _NavigationFABFrameState extends State<NavigationFABFrame>
     with WidgetsBindingObserver {
+  // Drawer 메뉴 데이터를 저장할 리스트
   List<Map<String, dynamic>> menus = [];
+
+  // 로컬 인증 객체
   final LocalAuthentication auth = LocalAuthentication();
+
+  // 마지막 인증 시간
   DateTime? _lastAuthenticatedTime;
+
+  // 인증 타임아웃 설정
   static const _authTimeout = Duration(minutes: 10);
   static const _noAuthTimeout = Duration(hours: 8);
+
+  // 사용자 데이터
   Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Lifecycle Observer 등록
-    _fetchPendingTasks(); // 데이터 가져오기
-    _initializeData();
+    WidgetsBinding.instance.addObserver(this); // 라이프사이클 상태 관찰자 등록
+    _fetchPendingTasks(); // 서버에서 메뉴 데이터 가져오기
+    _initializeData(); // 초기 사용자 데이터 로드
   }
 
   Future<void> _initializeData() async {
-    userData = await loadUserData();
+    userData = await loadUserData(); // SharedPreferences에서 사용자 데이터 로드
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // Observer 제거
+    WidgetsBinding.instance.removeObserver(this); // 라이프사이클 상태 관찰자 제거
     super.dispose();
   }
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    var logout = false; //true 면 로그아웃이다
+    var logout = false; // 로그아웃 여부 플래그
+
+    // 앱이 재개되었을 때의 처리
     if (state == AppLifecycleState.resumed) {
-      bool isDeviceSupported = await auth.isDeviceSupported();
-      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      bool isDeviceSupported =
+          await auth.isDeviceSupported(); // 장치가 생체 인증 지원 여부 확인
+      bool canCheckBiometrics = await auth.canCheckBiometrics; // 생체 인증 가능 여부 확인
       if (!isDeviceSupported) {
-        logout = _shouldAuthenticate(_noAuthTimeout);
+        logout = _shouldAuthenticate(_noAuthTimeout); // 인증 시간 초과 여부 확인
       } else if (!canCheckBiometrics) {
-        logout = _shouldAuthenticate(_authTimeout);
+        logout = _shouldAuthenticate(_authTimeout); // 인증 시간 초과 여부 확인
       } else {
         logout = _shouldAuthenticate(_authTimeout);
       }
 
+      // 로그아웃 필요 시 처리
       if (logout) {
         _handleAppResume();
       }
     }
 
+    // 인증 시간 갱신
     if (state == AppLifecycleState.detached ||
         state == AppLifecycleState.resumed) {
       _lastAuthenticatedTime = DateTime.now();
     }
   }
 
+  /// SharedPreferences에서 사용자 데이터 로드
   Future<Map<String, dynamic>> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userData = prefs.getString('user');
     return userData != null ? jsonDecode(userData) : {};
   }
 
+  /// 인증 필요 여부 확인
   bool _shouldAuthenticate(Duration timeout) {
     if (_lastAuthenticatedTime == null) return true;
     final timeSinceLastAuth =
@@ -81,16 +98,19 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     return timeSinceLastAuth >= timeout;
   }
 
+  /// 앱이 재개될 때 처리
   Future<void> _handleAppResume() async {
     bool isDeviceSupported = await auth.isDeviceSupported();
     bool canCheckBiometrics = await auth.canCheckBiometrics;
     if (!isDeviceSupported) {
+      // 장치가 생체 인증을 지원하지 않는 경우 로그아웃 처리
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } else if (!canCheckBiometrics) {
-      // 생체 인증을 사용할 수 없는 경우 사용자에게 안내 메시지를 표시
+      // 생체 인증을 사용할 수 없는 경우 사용자 알림 후 로그아웃 처리
       Util.showAlert('생체 인증이 활성화되지 않았습니다. 설정에서 활성화해주세요.');
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } else {
+      // 생체 인증 시도
       bool authenticated = await _authenticateUser();
       if (authenticated) {
         _lastAuthenticatedTime = DateTime.now(); // 인증 성공 시각 갱신
@@ -106,6 +126,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     }
   }
 
+  /// 생체 인증 수행
   Future<bool> _authenticateUser() async {
     try {
       return await auth.authenticate(
@@ -121,6 +142,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     }
   }
 
+  /// 로그아웃 조건 확인
   Future<bool> _checkLogoutConditions() async {
     try {
       final url =
@@ -137,6 +159,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     }
   }
 
+  /// 서버에서 메뉴 데이터를 가져옴
   Future<void> _fetchPendingTasks() async {
     try {
       final url = Uri.parse(UrlConstants.apiUrl + UrlConstants.menu).toString();
@@ -158,11 +181,13 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // End Drawer 설정
       endDrawer: Drawer(
         width: 300,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            // Drawer Header
             SizedBox(
               height: 120,
               child: DrawerHeader(
@@ -176,6 +201,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
                 ),
               ),
             ),
+            // 대시보드 메뉴
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: const Text('대시보드'),
@@ -184,6 +210,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
                 Navigator.pushReplacementNamed(context, '/dashboard');
               },
             ),
+            // 동적으로 생성된 메뉴
             ...menus.map((menu) {
               return ListTile(
                 leading: Icon(Util.getIcon(menu['TYPE_ICON'] ?? 'null')),
@@ -200,6 +227,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
               );
             }),
             const Divider(),
+            // 로그아웃 메뉴
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('로그아웃', style: TextStyle(color: Colors.red)),
@@ -211,6 +239,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
           ],
         ),
       ),
+      // 플로팅 액션 버튼
       floatingActionButton: Builder(
         builder: (BuildContext context) {
           return FloatingActionButton(
@@ -222,6 +251,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
           );
         },
       ),
+      // 전달된 자식 위젯 렌더링
       body: widget.child,
     );
   }
