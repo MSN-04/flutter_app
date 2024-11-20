@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nk_push_app/Utils/util.dart';
@@ -29,7 +32,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   DateTime? _lastAuthenticatedTime;
 
   // 인증 타임아웃 설정
-  static const _authTimeout = Duration(minutes: 10);
+  static const _authTimeout = Duration(seconds: 1);
   static const _noAuthTimeout = Duration(hours: 8);
 
   // 사용자 데이터
@@ -45,6 +48,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
   Future<void> _initializeData() async {
     userData = await loadUserData(); // SharedPreferences에서 사용자 데이터 로드
+    await checkFcmToken();
   }
 
   @override
@@ -88,6 +92,39 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userData = prefs.getString('user');
     return userData != null ? jsonDecode(userData) : {};
+  }
+
+  Future checkFcmToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    String? newToken = Platform.isAndroid
+        ? await messaging.getToken()
+        : await messaging.getAPNSToken();
+
+    if (newToken != null) {
+      print("FCM New Token: $newToken");
+
+      // 로컬 저장소에 FCM 토큰 저장
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? originToken = prefs.getString('fcm_token');
+      print("FCM Origin Token: $originToken");
+
+      if (newToken != originToken) {
+        var url =
+            Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
+        var response = await HttpService.post(url, {
+          'id': userData?['PSPSN_NO'],
+          'token': newToken,
+        });
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          if (data['resultState'] == "Y") {
+            await prefs.setString('fcm_token', newToken);
+          }
+        }
+      }
+    } else {
+      print("FCM 토큰 가져오기 실패");
+    }
   }
 
   /// 인증 필요 여부 확인

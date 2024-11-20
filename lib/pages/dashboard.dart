@@ -264,9 +264,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     push['PUSH_SEND_DATE']),
                                               ),
                                               onTap: () async {
+                                                await Util
+                                                    .markNotificationAsRead(); // 알림 읽음 처리
                                                 await setPushRead(
                                                     push['PUSH_ID']);
-                                                _refreshPushData();
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  '/push_type_detail',
+                                                  arguments:
+                                                      push, // 상세 화면으로 데이터 전달
+                                                ).then((result) {
+                                                  if (result != null &&
+                                                      result is bool &&
+                                                      result) {
+                                                    setState(() {
+                                                      _refreshPushData(); // 데이터 새로고침
+                                                    });
+                                                  } else {
+                                                    setState(() {
+                                                      push['PUSH_READ'] =
+                                                          true; // 읽음 상태 업데이트
+                                                      unreadCnt = (int.parse(
+                                                                  unreadCnt) -
+                                                              1)
+                                                          .toString();
+                                                    });
+                                                  }
+                                                });
                                               },
                                             ),
                                           );
