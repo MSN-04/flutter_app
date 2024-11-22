@@ -297,10 +297,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     setState(() {
                                                       push['PUSH_READ'] =
                                                           true; // 읽음 상태 업데이트
-                                                      unreadCnt = (int.parse(
-                                                                  unreadCnt) -
-                                                              1)
-                                                          .toString();
+                                                      unreadCnt =
+                                                          ((int.parse(unreadCnt) -
+                                                                          1) <
+                                                                      0
+                                                                  ? 0
+                                                                  : (int.parse(
+                                                                          unreadCnt) -
+                                                                      1))
+                                                              .toString();
                                                     });
                                                   }
                                                 });
