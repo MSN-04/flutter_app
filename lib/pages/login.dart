@@ -1,4 +1,6 @@
 import 'dart:convert'; // JSON 변환을 위한 패키지
+import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
 import 'package:flutter/services.dart'; // 플랫폼별 서비스 호출을 위한 패키지
 import 'package:local_auth/local_auth.dart'; // 생체 인증 라이브러리
@@ -308,6 +310,39 @@ class LoginScreenState extends State<LoginScreen> {
       } on PlatformException catch (e) {
         print(e);
       }
+    }
+  }
+
+  Future checkFcmToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    String? newToken = Platform.isAndroid
+        ? await messaging.getToken()
+        : await messaging.getAPNSToken();
+
+    if (newToken != null) {
+      print("FCM New Token: $newToken");
+
+      // 로컬 저장소에 FCM 토큰 저장
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? originToken = prefs.getString('fcm_token');
+      print("FCM Origin Token: $originToken");
+
+      if (newToken != originToken) {
+        var url =
+            Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
+        var response = await HttpService.post(url, {
+          'id': idController.text,
+          'token': newToken,
+        });
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          if (data['resultState'] == "Y") {
+            await prefs.setString('fcm_token', newToken);
+          }
+        }
+      }
+    } else {
+      print("FCM 토큰 가져오기 실패");
     }
   }
 

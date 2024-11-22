@@ -127,7 +127,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
                         termsList[index]['TOS_TITLE'] ??
                             "약관 ${index + 1}", // 약관 제목
                         termsList[index]['TOS_BODY'] ?? "", // 약관 내용
-                        isScrolledToEndList[index], // 스크롤 상태
+                        true, // 스크롤 상태
                         (value) {
                           setState(() {
                             isScrolledToEndList[index] = value; // 스크롤 상태 업데이트
@@ -220,7 +220,6 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
         // 약관 내용 스크롤 가능한 컨테이너
         Container(
           width: double.infinity,
-          height: 400,
           decoration: BoxDecoration(
             border: Border.all(color: const Color.fromARGB(255, 179, 179, 179)),
             borderRadius: BorderRadius.circular(8.0),
@@ -253,7 +252,7 @@ class _TermsAgreementScreenState extends State<TermsAgreementScreen> {
           ),
         ),
         // 스크롤 완료 시 동의 체크박스 표시
-        if (isScrolledToEnd)
+        if (isScrolledToEnd) //isScrolledToEnd
           Row(
             children: [
               Checkbox(

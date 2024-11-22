@@ -1,20 +1,63 @@
 // lib/notification_detail_screen.dart
 import 'dart:convert'; // JSON 변환을 위한 패키지
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
+import 'package:flutter_html_table/flutter_html_table.dart';
+import 'package:html/parser.dart';
 import 'package:nk_push_app/http/http_service.dart'; // HTTP 요청 처리 클래스
+import 'package:flutter_html/flutter_html.dart'; // HTML 렌더링을 위한 패키지
+import 'package:url_launcher/url_launcher.dart';
 
 import '../Utils/util.dart'; // 유틸리티 클래스
 import '../constants/url_constants.dart'; // URL 상수 모음
 import '../frame/navigation_fab_frame.dart'; // 공통 프레임 위젯
 
-/// 알림 상세 화면 위젯
-class PushTypeDetailScreen extends StatelessWidget {
+class PushTypeDetailScreen extends StatefulWidget {
   const PushTypeDetailScreen({super.key});
 
-  /// 알림을 처리하는 메서드
-  ///
-  /// [context]: 현재 화면의 빌드 컨텍스트
-  /// [pushId]: 처리할 알림의 ID
+  @override
+  State<PushTypeDetailScreen> createState() => _PushTypeDetailScreenState();
+}
+
+class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
+  final GlobalKey _htmlKey = GlobalKey();
+  double _calculatedWidth = 0.0;
+  bool _isHtmlRendered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // HTML 렌더링이 완료될 때까지 대기
+      setState(() {
+        _isHtmlRendered = true;
+      });
+      _calculateRenderedWidth();
+    });
+  }
+
+  void _calculateRenderedWidth() async {
+    final RenderBox? renderBox =
+        _htmlKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null) {
+      final double visibleWidth = renderBox.size.width;
+
+      final ScrollableState? scrollableState =
+          Scrollable.of(_htmlKey.currentContext!);
+      if (scrollableState != null) {
+        final ScrollPosition position = scrollableState.position;
+        final double maxScrollableExtent = position.maxScrollExtent;
+
+        final double overflowPixels = maxScrollableExtent - visibleWidth;
+
+        setState(() {
+          _calculatedWidth =
+              overflowPixels > 0 ? visibleWidth + overflowPixels : visibleWidth;
+        });
+      }
+    }
+  }
+
   Future<void> _handlePushProcessing(BuildContext context, int pushId) async {
     try {
       // 전달된 알림 상세 정보를 가져옴
@@ -56,10 +99,17 @@ class PushTypeDetailScreen extends StatelessWidget {
     }
   }
 
-  /// 화면 렌더링 메서드
+  Future<void> _openLink(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 이전 화면에서 전달된 알림 상세 데이터를 가져옴
     final Map<String, dynamic> pushTypeDetail =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
@@ -69,85 +119,136 @@ class PushTypeDetailScreen extends StatelessWidget {
     return NavigationFABFrame(
       child: Scaffold(
         appBar: AppBar(
-          iconTheme: const IconThemeData(color: Colors.white), // 아이콘 색상 설정
+          iconTheme: const IconThemeData(color: Colors.white),
           title: const Text(
             '알림 상세',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFF004A99), // 앱바 배경색
+          backgroundColor: const Color(0xFF004A99),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0), // 화면 여백
+          padding: const EdgeInsets.all(16.0),
           child: SizedBox(
-            width: double.infinity, // 카드 너비를 화면에 맞춤
+            width: double.infinity,
             child: Card(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // 카드 모서리 둥글기 설정
+                borderRadius: BorderRadius.circular(12),
               ),
-              elevation: 4, // 카드 그림자 효과
+              elevation: 4,
               child: Padding(
-                padding: const EdgeInsets.all(20.0), // 카드 내부 여백
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
-                  children: [
-                    // 알림 전송 날짜 표시
-                    Text(
-                      Util.formatDate(pushTypeDetail['PUSH_SEND_DATE'] ?? ''),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // 알림 제목 표시
-                    Text(
-                      pushTypeDetail['PUSH_TITLE'] ?? '알림 제목',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // 알림 내용 표시
-                    Text(
-                      pushTypeDetail['PUSH_CONTENTS'] ??
-                          '이곳에 알림의 상세 내용이 표시됩니다.',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.5, // 줄 간격
-                        color: Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // "처리 완료" 버튼 (처리 가능 상태일 때만 표시)
-                    if (isProcessable)
-                      SizedBox(
-                        width: double.infinity, // 버튼 너비를 화면에 맞춤
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green, // 버튼 색상
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(8), // 버튼 모서리 둥글기
-                            ),
+                padding: const EdgeInsets.all(20.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final RenderBox? renderBox = _htmlKey.currentContext
+                          ?.findRenderObject() as RenderBox?;
+                      if (renderBox != null &&
+                          _calculatedWidth != renderBox.size.width) {
+                        setState(() {
+                          _calculatedWidth = renderBox.size.width;
+                          print(
+                              '_calculatedWidth_calculatedWidth : $_calculatedWidth');
+                          print(
+                              "Screen Width: ${MediaQuery.of(context).size.width}");
+                        });
+                      }
+                    });
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          Util.formatDate(
+                              pushTypeDetail['PUSH_SEND_DATE'] ?? ''),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
                           ),
-                          onPressed: () {
-                            _handlePushProcessing(context,
-                                pushTypeDetail['PUSH_ID']); // 버튼 클릭 시 알림 처리
-                          },
-                          child: const Text(
-                            "처리 완료",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          pushTypeDetail['PUSH_TITLE'] ?? '알림 제목',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.vertical,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: MediaQuery.of(context).size.width,
+                                  maxWidth: _calculatedWidth > 0
+                                      ? _calculatedWidth
+                                      : MediaQuery.of(context).size.width,
+                                ),
+                                child: Html(
+                                  key: _htmlKey,
+                                  data: pushTypeDetail['PUSH_CONTENTS'] ?? '',
+                                  extensions: const [TableHtmlExtension()],
+                                  style: {
+                                    "table": Style(
+                                      border: Border.all(color: Colors.grey),
+                                      padding: HtmlPaddings.all(8),
+                                      whiteSpace: WhiteSpace.pre,
+                                    ),
+                                    "th": Style(
+                                      border: Border.all(color: Colors.grey),
+                                      backgroundColor: Colors.grey[300],
+                                      padding: HtmlPaddings.all(8),
+                                      whiteSpace: WhiteSpace.pre,
+                                    ),
+                                    "td": Style(
+                                      border: Border.all(color: Colors.grey),
+                                      padding: HtmlPaddings.all(8),
+                                      whiteSpace: WhiteSpace.pre,
+                                    ),
+                                  },
+                                  onLinkTap: (url, _, __) {
+                                    if (url != null) {
+                                      _openLink(url);
+                                    }
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                        if (isProcessable)
+                          SizedBox(
+                            width: double.infinity, // 버튼 너비를 화면에 맞춤
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green, // 버튼 색상
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(8), // 버튼 모서리 둥글기
+                                ),
+                              ),
+                              onPressed: () {
+                                _handlePushProcessing(context,
+                                    pushTypeDetail['PUSH_ID']); // 버튼 클릭 시 알림 처리
+                              },
+                              child: const Text(
+                                "처리 완료",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

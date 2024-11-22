@@ -1,5 +1,6 @@
 import 'dart:convert'; // JSON 변환을 위한 패키지
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
+import 'package:flutter_html/flutter_html.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 사용
 
 import '../Utils/util.dart'; // 유틸리티 클래스
@@ -116,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CircleAvatar(
                               radius: 40,
                               backgroundImage: NetworkImage(
-                                '${getPictureUrl()}${userData!['PSPSN_PICTURE'].toString()}',
+                                '${getPictureUrl()}${userData!['PSPSN_PICTURE'].toString()}?nocache=${DateTime.now().millisecondsSinceEpoch}',
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -129,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      userData!['SYUSR_NAME'] ?? '홍길동',
+                                      userData!['SYUSR_NAME'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -138,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      userData!['PSGRD_NAME'] ?? '책임',
+                                      userData!['PSGRD_NAME'] ?? '',
                                       style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
@@ -148,16 +149,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  userData!['PSDPT_NAME'] ??
-                                      '(주) NK > 특수기기사업본부 운영최적화',
+                                  userData!['PSDPT_NAME'] ?? '',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.white70,
                                   ),
                                 ),
                                 Text(
-                                  userData!['PSPSN_EMAIL'] ??
-                                      'honggildong@example.com',
+                                  userData!['PSPSN_EMAIL'] ?? '',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.white70,
@@ -253,11 +252,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              subtitle: Text(
-                                                push['PUSH_CONTENTS'] ??
-                                                    '알림 내용',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                              subtitle: Html(
+                                                data: (push['PUSH_CONTENTS'] ??
+                                                        '알림 내용')
+                                                    .replaceAll(
+                                                        RegExp(r'<br\s*/?>'),
+                                                        ' ') // <br> 태그를 공백으로 치환
+                                                    .replaceAll(
+                                                        RegExp(r'<[^>]*>'),
+                                                        ' ') // 모든 HTML 태그 제거
+                                                    .trim(), // 불필요한 공백 제거,
+                                                style: {
+                                                  "body": Style(
+                                                    fontSize: FontSize(14.0),
+                                                    maxLines: 1,
+                                                    textOverflow:
+                                                        TextOverflow.ellipsis,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                },
                                               ),
                                               trailing: Text(
                                                 Util.formatDate(

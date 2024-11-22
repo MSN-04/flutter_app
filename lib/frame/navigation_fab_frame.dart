@@ -32,8 +32,10 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   DateTime? _lastAuthenticatedTime;
 
   // 인증 타임아웃 설정
-  static const _authTimeout = Duration(seconds: 1);
-  static const _noAuthTimeout = Duration(hours: 8);
+  static const _authTimeout = Duration(minutes: 10);
+  static const _noAuthTimeout = Duration(days: 7);
+
+  bool _isAuthenticating = false; // 생체 인증 중인지 여부
 
   // 사용자 데이터
   Map<String, dynamic>? userData;
@@ -63,6 +65,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
     // 앱이 재개되었을 때의 처리
     if (state == AppLifecycleState.resumed) {
+      if (_isAuthenticating) return;
       bool isDeviceSupported =
           await auth.isDeviceSupported(); // 장치가 생체 인증 지원 여부 확인
       bool canCheckBiometrics = await auth.canCheckBiometrics; // 생체 인증 가능 여부 확인
@@ -82,7 +85,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
     // 인증 시간 갱신
     if (state == AppLifecycleState.detached ||
-        state == AppLifecycleState.resumed) {
+        state == AppLifecycleState.inactive) {
       _lastAuthenticatedTime = DateTime.now();
     }
   }
@@ -137,29 +140,37 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
   /// 앱이 재개될 때 처리
   Future<void> _handleAppResume() async {
-    bool isDeviceSupported = await auth.isDeviceSupported();
-    bool canCheckBiometrics = await auth.canCheckBiometrics;
-    if (!isDeviceSupported) {
-      // 장치가 생체 인증을 지원하지 않는 경우 로그아웃 처리
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    } else if (!canCheckBiometrics) {
-      // 생체 인증을 사용할 수 없는 경우 사용자 알림 후 로그아웃 처리
-      Util.showAlert('생체 인증이 활성화되지 않았습니다. 설정에서 활성화해주세요.');
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    } else {
-      // 생체 인증 시도
-      bool authenticated = await _authenticateUser();
-      if (authenticated) {
-        _lastAuthenticatedTime = DateTime.now(); // 인증 성공 시각 갱신
-        bool shouldLogout = await _checkLogoutConditions();
-        if (!shouldLogout) {
+    try {
+      _isAuthenticating = true;
+      bool isDeviceSupported = await auth.isDeviceSupported();
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      if (!isDeviceSupported) {
+        // 장치가 생체 인증을 지원하지 않는 경우 로그아웃 처리
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      } else if (!canCheckBiometrics) {
+        // 생체 인증을 사용할 수 없는 경우 사용자 알림 후 로그아웃 처리
+        Util.showAlert('생체 인증이 활성화되지 않았습니다. 설정에서 활성화해주세요.');
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      } else {
+        // 생체 인증 시도
+        bool authenticated = await _authenticateUser();
+        if (authenticated) {
+          _lastAuthenticatedTime = DateTime.now(); // 인증 성공 시각 갱신
+          bool shouldLogout = await _checkLogoutConditions();
+          if (!shouldLogout) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false);
+          }
+        } else {
+          // 인증 실패 시 로그인 화면으로 전환
           Navigator.pushNamedAndRemoveUntil(
               context, '/login', (route) => false);
         }
-      } else {
-        // 인증 실패 시 로그인 화면으로 전환
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       }
+    } catch (e) {
+      print("Authentication error: $e");
+    } finally {
+      _isAuthenticating = false;
     }
   }
 
@@ -264,7 +275,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
               );
             }),
             const Divider(),
-            // 로그아웃 메뉴
+            //로그아웃 메뉴
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('로그아웃', style: TextStyle(color: Colors.red)),

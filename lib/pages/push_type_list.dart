@@ -2,6 +2,7 @@ import 'dart:convert'; // JSON 변환을 위한 패키지
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
 import 'package:http/http.dart' as http; // HTTP 요청 처리 패키지
 import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 접근
+import 'package:flutter_html/flutter_html.dart'; // HTML 렌더링을 위한 패키지
 
 import '../Utils/util.dart'; // 유틸리티 클래스
 import '../constants/url_constants.dart'; // URL 상수 모음
@@ -244,10 +245,21 @@ class PushTypeListScreenState extends State<PushTypeListScreen> {
                                                 : FontWeight.normal,
                                       ),
                                     ),
-                                    subtitle: Text(
-                                      push['PUSH_CONTENTS'] ?? '알림 내용',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    subtitle: Html(
+                                      data: (push['PUSH_CONTENTS'] ?? '알림 내용')
+                                          .replaceAll(RegExp(r'<br\s*/?>'),
+                                              ' ') // <br> 태그를 공백으로 치환
+                                          .replaceAll(RegExp(r'<[^>]*>'),
+                                              ' ') // 모든 HTML 태그 제거
+                                          .trim(), // 불필요한 공백 제거,
+                                      style: {
+                                        "body": Style(
+                                          fontSize: FontSize(14.0),
+                                          maxLines: 1,
+                                          textOverflow: TextOverflow.ellipsis,
+                                          color: Colors.grey[600],
+                                        ),
+                                      },
                                     ),
                                     trailing: Text(
                                       Util.formatDate(push['PUSH_SEND_DATE']),
