@@ -1,14 +1,17 @@
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // JSON 변환을 위한 패키지
+import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart'; // Flutter UI 구성 요소
+import 'package:flutter/services.dart'; // 플랫폼별 서비스 호출을 위한 패키지
+import 'package:local_auth/local_auth.dart'; // 생체 인증 라이브러리
+import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 접근
 
-import '../Utils/util.dart';
-import '../constants/url_constants.dart';
-import '../http/http_service.dart';
-import '../main.dart';
+import '../Utils/util.dart'; // 유틸리티 클래스
+import '../constants/url_constants.dart'; // URL 상수 모음
+import '../http/http_service.dart'; // HTTP 요청 처리 클래스
+import '../main.dart'; // 앱 메인 클래스
 
+/// 로그인 화면을 나타내는 StatefulWidget
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +20,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
+  // 컨트롤러 및 포커스 노드 선언
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
@@ -25,31 +29,35 @@ class LoginScreenState extends State<LoginScreen> {
   final FocusNode passwordFocusNode = FocusNode();
   final FocusNode otpFocusNode = FocusNode();
 
-  bool isLoading = false;
-  String? selectedComp;
+  // 상태 변수
+  bool isLoading = false; // 로딩 상태
+  String? selectedComp; // 선택된 회사
   final Map<String, String> comps = {
     'NK': 'NK',
     'KHNT': 'KHNT',
     'ENK': 'ENK',
     'TS': 'The Safety',
     'TECH': 'NK Tech'
-  };
+  }; // 회사 리스트
 
+  /// 화면을 렌더링하는 메서드
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF004A99),
+      backgroundColor: const Color(0xFF004A99), // 배경색 설정
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0), // 가로 여백
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center, // 중앙 정렬
             children: [
+              // 로고 이미지
               Image.asset(
                 'assets/img/nk_logo.png',
                 height: 100,
               ),
               const SizedBox(height: 40),
+              // 회사 선택 드롭다운
               DropdownButtonFormField<String>(
                 value: selectedComp,
                 items: comps.entries.map((entry) {
@@ -61,7 +69,7 @@ class LoginScreenState extends State<LoginScreen> {
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
-                    selectedComp = value;
+                    selectedComp = value; // 선택된 회사 업데이트
                   });
                 },
                 decoration: InputDecoration(
@@ -74,10 +82,10 @@ class LoginScreenState extends State<LoginScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                dropdownColor: const Color(
-                    0xFF004A99), // Background color for dropdown items
+                dropdownColor: const Color(0xFF004A99), // 드롭다운 배경색
               ),
               const SizedBox(height: 16),
+              // 아이디 입력 필드
               TextField(
                 controller: idController,
                 focusNode: idFocusNode,
@@ -94,6 +102,7 @@ class LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 16),
+              // 비밀번호 입력 필드
               TextField(
                 controller: passwordController,
                 focusNode: passwordFocusNode,
@@ -107,10 +116,11 @@ class LoginScreenState extends State<LoginScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                obscureText: true,
+                obscureText: true, // 비밀번호 가리기
                 style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 16),
+              // OTP 입력 필드
               TextField(
                 controller: otpController,
                 focusNode: otpFocusNode,
@@ -127,17 +137,18 @@ class LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 32),
+              // 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF8cc63f),
+                    backgroundColor: const Color(0xFF8cc63f), // 버튼 색상
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: isLoading ? null : onLoginPressed,
+                  onPressed: isLoading ? null : onLoginPressed, // 로그인 핸들러
                   child: const Text(
                     '로그인',
                     style: TextStyle(fontSize: 18, color: Colors.white),
@@ -152,18 +163,22 @@ class LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// 로그인 버튼 클릭 시 실행되는 메서드
   Future<void> onLoginPressed() async {
-    setState(() => isLoading = true);
-    showLoadingDialog();
+    setState(() => isLoading = true); // 로딩 상태 활성화
+    showLoadingDialog(); // 로딩 다이얼로그 표시
 
+    // 로그인 시도
     bool loginSuccess = await attemptLogin();
     if (loginSuccess) {
-      bool tokenSaveSuccess = await sendTokenToServer(idController.text);
-      if (mounted) Navigator.pop(context);
+      bool tokenSaveSuccess =
+          await sendTokenToServer(idController.text); // 토큰 저장
+      if (mounted) Navigator.pop(context); // 로딩 다이얼로그 닫기
 
-      await checkBiometrics();
+      await checkBiometrics(); // 생체 인증 여부 확인
 
       if (tokenSaveSuccess && mounted) {
+        // 약관 확인
         final url =
             Uri.parse(UrlConstants.apiUrl + UrlConstants.getTos).toString();
         final response = await HttpService.get('$url/${idController.text}');
@@ -171,12 +186,12 @@ class LoginScreenState extends State<LoginScreen> {
         if (response.statusCode == 200) {
           checkTos = json.decode(response.body);
         }
+        // 약관 동의 여부에 따라 페이지 이동
         if (!checkTos) {
           Navigator.pushReplacementNamed(context, '/terms');
         } else {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
-        ;
       } else {
         Util.showErrorAlert("Token Failed");
       }
@@ -185,13 +200,14 @@ class LoginScreenState extends State<LoginScreen> {
       Util.showErrorAlert("Login Failed");
     }
 
-    setState(() => isLoading = false);
+    setState(() => isLoading = false); // 로딩 상태 해제
   }
 
+  /// 로딩 다이얼로그 표시
   void showLoadingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // 사용자 액션으로 닫기 방지
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -219,6 +235,7 @@ class LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// 로그인 시도
   Future<bool> attemptLogin() async {
     var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.login).toString();
     var response = await HttpService.post(url, {
@@ -234,8 +251,7 @@ class LoginScreenState extends State<LoginScreen> {
       if (data['resultState'] == "Y") {
         var unreadNotifications = await fetchUnreadNotifications();
         prefs.setInt('unread_notifications', unreadNotifications);
-        updateBadge(unreadNotifications); // 앱 아이콘에 배지 표시
-
+        updateBadge(unreadNotifications); // 배지 업데이트
         prefs.setString('comp', selectedComp ?? 'NK');
         return true;
       } else {
@@ -245,17 +261,18 @@ class LoginScreenState extends State<LoginScreen> {
     return false;
   }
 
+  /// 읽지 않은 알림 수 가져오기
   Future<int> fetchUnreadNotifications() async {
     var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.dashboardUnread)
         .toString();
     var response = await HttpService.get('$url/${idController.text}');
     if (response.statusCode == 200) {
-      int data = int.tryParse(response.body) ?? 0;
-      return data;
+      return int.tryParse(response.body) ?? 0;
     }
     return 0;
   }
 
+  /// FCM 토큰을 서버로 전송
   Future<bool> sendTokenToServer(String userId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('fcm_token');
@@ -269,21 +286,16 @@ class LoginScreenState extends State<LoginScreen> {
       });
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        if (data['resultState'] == "Y") {
-          return true;
-        } else {
-          Util.showErrorAlert(data['resultMessage']);
-        }
+        return data['resultState'] == "Y";
       }
     }
     return false;
   }
 
-//테스트
+  /// 생체 인증 가능 여부 확인
   Future<void> checkBiometrics() async {
     final LocalAuthentication auth = LocalAuthentication();
     bool canCheckBiometrics = false;
-    List<BiometricType> availableBiometrics;
 
     try {
       canCheckBiometrics = await auth.canCheckBiometrics;
@@ -293,7 +305,7 @@ class LoginScreenState extends State<LoginScreen> {
 
     if (canCheckBiometrics) {
       try {
-        availableBiometrics = await auth.getAvailableBiometrics();
+        var availableBiometrics = await auth.getAvailableBiometrics();
         print(availableBiometrics);
       } on PlatformException catch (e) {
         print(e);
@@ -301,6 +313,40 @@ class LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future checkFcmToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    String? newToken = Platform.isAndroid
+        ? await messaging.getToken()
+        : await messaging.getAPNSToken();
+
+    if (newToken != null) {
+      print("FCM New Token: $newToken");
+
+      // 로컬 저장소에 FCM 토큰 저장
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? originToken = prefs.getString('fcm_token');
+      print("FCM Origin Token: $originToken");
+
+      if (newToken != originToken) {
+        var url =
+            Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
+        var response = await HttpService.post(url, {
+          'id': idController.text,
+          'token': newToken,
+        });
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          if (data['resultState'] == "Y") {
+            await prefs.setString('fcm_token', newToken);
+          }
+        }
+      }
+    } else {
+      print("FCM 토큰 가져오기 실패");
+    }
+  }
+
+  /// 리소스 정리
   @override
   void dispose() {
     idController.dispose();
