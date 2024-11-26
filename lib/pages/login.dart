@@ -171,6 +171,8 @@ class LoginScreenState extends State<LoginScreen> {
     // 로그인 시도
     bool loginSuccess = await attemptLogin();
     if (loginSuccess) {
+      await checkFcmToken();
+
       bool tokenSaveSuccess =
           await sendTokenToServer(idController.text); // 토큰 저장
       if (mounted) Navigator.pop(context); // 로딩 다이얼로그 닫기
@@ -315,9 +317,26 @@ class LoginScreenState extends State<LoginScreen> {
 
   Future checkFcmToken() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
-    String? newToken = Platform.isAndroid
-        ? await messaging.getToken()
-        : await messaging.getAPNSToken();
+
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('FCM 권한 허용됨');
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
+      print('FCM 임시 권한 허용됨');
+    } else {
+      print('FCM 권한 거부됨');
+    }
+
+    // String? token = Platform.isAndroid
+    //     ? await messaging.getToken()
+    //     : await messaging.getAPNSToken();
+    String? newToken = await messaging.getToken();
 
     if (newToken != null) {
       print("FCM New Token: $newToken");

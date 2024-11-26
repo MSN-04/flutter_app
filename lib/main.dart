@@ -63,38 +63,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// FCM 토큰 초기화 및 저장
 Future<void> initializeFCMToken() async {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  // FCM 권한 요청
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
-  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    print('FCM 권한 허용됨');
-  } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-    print('FCM 임시 권한 허용됨');
-  } else {
-    print('FCM 권한 거부됨');
-  }
-
-  // 플랫폼별 토큰 가져오기
-  String? token = Platform.isAndroid
-      ? await messaging.getToken()
-      : await messaging.getAPNSToken();
-
-  if (token != null) {
-    print("FCM Token: $token");
-
-    // 로컬 저장소에 FCM 토큰 저장
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('fcm_token', token);
-  } else {
-    print("FCM 토큰 가져오기 실패");
-  }
-
   // 포그라운드 메시지 수신 시 처리
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

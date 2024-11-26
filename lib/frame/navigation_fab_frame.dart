@@ -99,9 +99,10 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
   Future checkFcmToken() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
-    String? newToken = Platform.isAndroid
-        ? await messaging.getToken()
-        : await messaging.getAPNSToken();
+    // String? token = Platform.isAndroid
+    //     ? await messaging.getToken()
+    //     : await messaging.getAPNSToken();
+    String? newToken = await messaging.getToken();
 
     if (newToken != null) {
       print("FCM New Token: $newToken");

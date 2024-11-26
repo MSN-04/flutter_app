@@ -43,10 +43,10 @@
 	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>fetch</string>
+		<string>push-to-talk</string>
 		<string>remote-notification</string>
 		<string>processing</string>
-		<string>push-to-talk</string>
-		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -67,5 +67,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>사용자의 푸시 알림을 보내기 위해 필요한 권한입니다.</string>
+	<key>FirebaseMessagingAutoInitEnabled</key>
+	<false/>
 </dict>
 </plist>
