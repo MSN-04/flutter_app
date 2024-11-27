@@ -1,6 +1,7 @@
 import 'dart:convert'; // JSON 변환을 위한 패키지
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
 import 'package:flutter/services.dart'; // 플랫폼별 서비스 호출을 위한 패키지
 import 'package:local_auth/local_auth.dart'; // 생체 인증 라이브러리
@@ -336,7 +337,9 @@ class LoginScreenState extends State<LoginScreen> {
     // String? token = Platform.isAndroid
     //     ? await messaging.getToken()
     //     : await messaging.getAPNSToken();
-    String? newToken = await messaging.getToken();
+    String? newToken = kReleaseMode
+        ? await messaging.getToken()
+        : await messaging.getAPNSToken();
 
     if (newToken != null) {
       print("FCM New Token: $newToken");

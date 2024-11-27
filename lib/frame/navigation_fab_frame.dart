@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nk_push_app/Utils/util.dart';
@@ -102,7 +103,9 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     // String? token = Platform.isAndroid
     //     ? await messaging.getToken()
     //     : await messaging.getAPNSToken();
-    String? newToken = await messaging.getToken();
+    String? newToken = kReleaseMode
+        ? await messaging.getToken()
+        : await messaging.getAPNSToken();
 
     if (newToken != null) {
       print("FCM New Token: $newToken");

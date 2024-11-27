@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
+	<key>FirebaseMessagingAutoInitEnabled</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>
@@ -37,16 +39,16 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>앱을 사용하기 위해 생체 인증이 필요합니다.</string>
+	<key>UIUserNotificationUsageDescription</key>
+	<string>사용자의 푸시 알림을 보내기 위해 필요한 권한입니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIApplicationSupportsMultipleScenes</key>
 	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
-		<string>push-to-talk</string>
 		<string>remote-notification</string>
-		<string>processing</string>
+		<string>push-to-talk</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -67,9 +69,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>사용자의 푸시 알림을 보내기 위해 필요한 권한입니다.</string>
-	<key>FirebaseMessagingAutoInitEnabled</key>
-	<false/>
 </dict>
 </plist>

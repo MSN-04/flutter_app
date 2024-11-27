@@ -2,6 +2,7 @@ import 'dart:convert'; // JSON 데이터 처리
 import 'dart:io'; // 플랫폼 확인
 
 import 'package:firebase_messaging/firebase_messaging.dart'; // FCM 푸시 알림
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // Flutter UI
 import 'package:firebase_core/firebase_core.dart'; // Firebase 초기화
 import 'package:flutter_app_badger/flutter_app_badger.dart'; // 앱 아이콘 배지 관리
@@ -158,16 +159,20 @@ class SplashScreenState extends State<SplashScreen> {
 
   /// FCM 토큰 업데이트가 필요한 경우 서버에 토큰 전송
   Future<void> updateFCMTokenIfNeeded() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    String? newToken = await messaging.getToken();
+    if (Firebase.apps.isNotEmpty) {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      String? newToken = kReleaseMode
+          ? await messaging.getToken()
+          : await messaging.getAPNSToken();
 
-    if (newToken != null) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? oldToken = prefs.getString('fcm_token');
+      if (newToken != null) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? oldToken = prefs.getString('fcm_token');
 
-      if (oldToken == null || oldToken != newToken) {
-        await prefs.setString('fcm_token', newToken);
-        await sendTokenToServer(newToken); // 서버에 토큰 업데이트
+        if (oldToken == null || oldToken != newToken) {
+          await prefs.setString('fcm_token', newToken);
+          await sendTokenToServer(newToken); // 서버에 토큰 업데이트
+        }
       }
     }
   }
