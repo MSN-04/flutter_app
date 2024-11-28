@@ -163,7 +163,9 @@ class SplashScreenState extends State<SplashScreen> {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
       String? newToken = kReleaseMode
           ? await messaging.getToken()
-          : await messaging.getAPNSToken();
+          : Platform.isAndroid
+              ? await messaging.getToken()
+              : await messaging.getAPNSToken();
 
       if (newToken != null) {
         SharedPreferences prefs = await SharedPreferences.getInstance();

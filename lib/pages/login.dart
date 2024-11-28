@@ -339,7 +339,9 @@ class LoginScreenState extends State<LoginScreen> {
     //     : await messaging.getAPNSToken();
     String? newToken = kReleaseMode
         ? await messaging.getToken()
-        : await messaging.getAPNSToken();
+        : Platform.isAndroid
+            ? await messaging.getToken()
+            : await messaging.getAPNSToken();
 
     if (newToken != null) {
       print("FCM New Token: $newToken");
