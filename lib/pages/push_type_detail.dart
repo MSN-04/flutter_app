@@ -193,6 +193,7 @@ class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
                                   extensions: const [TableHtmlExtension()],
                                   style: {
                                     "table": Style(
+                                      width: Width(100, Unit.percent),
                                       border: Border.all(color: Colors.grey),
                                       padding: HtmlPaddings.all(8),
                                       whiteSpace: WhiteSpace.pre,

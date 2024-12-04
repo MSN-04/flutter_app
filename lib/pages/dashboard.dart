@@ -177,8 +177,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             // 헤더와 통계 표시
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              padding: const EdgeInsets.only(
+                                  left: 8.0,
+                                  right: 8.0,
+                                  top: 12.0,
+                                  bottom: 12.0),
                               child: Row(
                                 children: [
                                   const Text(
@@ -230,6 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                       )
                                     : ListView.builder(
+                                        padding: EdgeInsets.zero,
                                         itemCount: pushs.length,
                                         itemBuilder: (context, index) {
                                           var push = pushs[index];
