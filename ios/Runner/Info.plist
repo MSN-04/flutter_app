@@ -39,8 +39,6 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>앱을 사용하기 위해 생체 인증이 필요합니다.</string>
-	<key>UIUserNotificationUsageDescription</key>
-	<string>사용자의 푸시 알림을 보내기 위해 필요한 권한입니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIApplicationSupportsMultipleScenes</key>
@@ -69,5 +67,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIUserNotificationUsageDescription</key>
+	<string>사용자의 푸시 알림을 보내기 위해 필요한 권한입니다.</string>
 </dict>
 </plist>
