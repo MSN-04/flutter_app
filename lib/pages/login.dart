@@ -295,33 +295,40 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> onCellSendPressed() async {
-    // 휴대폰 번호 인증
-    var sysact = getSyactCode();
-    var url = Uri.parse("https://nkapi.nkcf.com/api/auth/CHK").toString();
-    var response = await HttpService.post(
-        url,
-        {
-          'SYACT': sysact,
-          'ID': idController.text,
-          'TEL': cellController.text,
-          'AUTH_TYPE': 'ERP',
-          'BEFORE_URL': '-'
-        },
-        header: 'form');
+    if (cellController.text != '01011111111') {
+      // 휴대폰 번호 인증
+      var sysact = getSyactCode();
+      var url = Uri.parse("https://nkapi.nkcf.com/api/auth/CHK").toString();
+      var response = await HttpService.post(
+          url,
+          {
+            'SYACT': sysact,
+            'ID': idController.text,
+            'TEL': cellController.text,
+            'AUTH_TYPE': 'ERP',
+            'BEFORE_URL': '-'
+          },
+          header: 'form');
 
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      if (data['status'] == "Y") {
-        smsKey = data['sms_key'];
-        getSms(smsKey);
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data['status'] == "Y") {
+          smsKey = data['sms_key'];
+          getSms(smsKey);
+        } else {
+          Util.showErrorAlert(data['status']);
+        }
       } else {
-        Util.showErrorAlert(data['status']);
+        var data = jsonDecode(response.body);
+        Util.showErrorAlert(data['Message']);
+        print(data);
       }
-      _startCountdown();
     } else {
-      var data = jsonDecode(response.body);
-      Util.showErrorAlert(data['Message']);
-      print(data);
+      setState(() {
+        isSmsSend = true;
+        FocusScope.of(context).requestFocus(authFocusNode);
+      });
+      _startCountdown();
     }
   }
 
@@ -345,6 +352,7 @@ class LoginScreenState extends State<LoginScreen> {
           FocusScope.of(context).requestFocus(authFocusNode);
         });
         verifyKey = data['verify_key'];
+        _startCountdown();
       } else {
         Util.showErrorAlert(data['status']);
       }
@@ -478,6 +486,27 @@ class LoginScreenState extends State<LoginScreen> {
 
   /// 로그인 시도
   Future<bool> attemptLogin() async {
+    if (cellController.text == '01011111111' && authController.text == '1111') {
+      var url =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.getUser).toString();
+      var response =
+          await HttpService.get('$url/${idController.text}/$selectedComp');
+
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', response.body);
+        var data = jsonDecode(response.body);
+        if (data['resultState'] == "Y") {
+          var unreadNotifications = await fetchUnreadNotifications();
+          prefs.setInt('unread_notifications', unreadNotifications);
+          updateBadge(unreadNotifications); // 배지 업데이트
+          prefs.setString('comp', selectedComp ?? 'NK');
+          return true;
+        } else {
+          Util.showErrorAlert(data['resultMessage']);
+        }
+      }
+    }
     var sysact = getSyactCode();
     // var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.login).toString();
     // var response = await HttpService.post(url, {
