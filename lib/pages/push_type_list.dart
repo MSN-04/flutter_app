@@ -85,8 +85,8 @@ class PushTypeListScreenState extends State<PushTypeListScreen> {
     if (_isLoading) return;
 
     setState(() {
-      _isRefreshing = true; // 새로고침 상태 활성화
-      _pushTypeList.clear(); // 기존 데이터 초기화
+      _isRefreshing = false; // 새로고침 상태 활성화
+      //_pushTypeList.clear(); // 기존 데이터 초기화
       _page = 1; // 페이지 번호 초기화
     });
     await _fetchPushTypeList(); // 새로고침 데이터 가져오기
@@ -182,120 +182,115 @@ class PushTypeListScreenState extends State<PushTypeListScreen> {
           ),
           backgroundColor: const Color(0xFF004A99), // 앱바 배경색
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator()) // 로딩 상태 표시
-            : Column(
-                children: [
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _refreshPushTypeList, // 새로고침 핸들러
-                      child: _applyFilter().isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.notifications_off,
-                                      size: 64, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    '알림이 없습니다',
-                                    style: TextStyle(
-                                        fontSize: 18, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: _applyFilter().length +
-                                  (_isRefreshing ? 1 : 0), // 데이터 수 + 로딩 상태
-                              itemBuilder: (context, index) {
-                                if (index == _applyFilter().length &&
-                                    _isRefreshing) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(8.0),
-                                    child: Center(
-                                        child: CircularProgressIndicator()),
-                                  );
-                                }
+        body: Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshPushTypeList, // 새로고침 핸들러
+                child: _applyFilter().isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_off,
+                                size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              '알림이 없습니다',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _applyFilter().length +
+                            (_isRefreshing ? 1 : 0), // 데이터 수 + 로딩 상태
+                        itemBuilder: (context, index) {
+                          // if (index == _applyFilter().length &&
+                          //     _isRefreshing) {
+                          //   return const Padding(
+                          //     padding: EdgeInsets.all(8.0),
+                          //     child: Center(
+                          //         child: CircularProgressIndicator()),
+                          //   );
+                          // }
 
-                                var push = _applyFilter()[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                      vertical: 4, horizontal: 8),
-                                  child: ListTile(
-                                    leading: Icon(
-                                      Util.getIcon(push['TYPE_ICON'] ?? 'null'),
-                                      color: push['PUSH_CHK'] == false
-                                          ? Colors.redAccent
-                                          : push['PUSH_READ'] == false
-                                              ? Colors.blueAccent
-                                              : Colors.grey,
-                                    ),
-                                    title: Text(
-                                      push['PUSH_TITLE'] ?? '알림 제목',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: push['PUSH_CHK'] == false
-                                            ? FontWeight.bold
-                                            : push['PUSH_READ'] == false
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                      ),
-                                    ),
-                                    subtitle: Html(
-                                      data: (push['PUSH_CONTENTS'] ?? '알림 내용')
-                                          .replaceAll(RegExp(r'<br\s*/?>'),
-                                              ' ') // <br> 태그를 공백으로 치환
-                                          .replaceAll(RegExp(r'<[^>]*>'),
-                                              ' ') // 모든 HTML 태그 제거
-                                          .trim(), // 불필요한 공백 제거,
-                                      style: {
-                                        "body": Style(
-                                          fontSize: FontSize(14.0),
-                                          maxLines: 1,
-                                          textOverflow: TextOverflow.ellipsis,
-                                          color: Colors.grey[600],
-                                        ),
-                                      },
-                                    ),
-                                    trailing: Text(
-                                      Util.formatDate(push['PUSH_SEND_DATE']),
-                                    ),
-                                    onTap: () async {
-                                      await Util
-                                          .markNotificationAsRead(); // 알림 읽음 처리
-                                      await setPushRead(
-                                          push['PUSH_ID']); // 서버에 읽음 전송
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/push_type_detail',
-                                        arguments: push, // 상세 화면으로 데이터 전달
-                                      ).then((result) {
-                                        if (result != null &&
-                                            result is bool &&
-                                            result) {
-                                          setState(() {
-                                            _refreshPushTypeList(); // 데이터 새로고침
-                                          });
-                                        } else {
-                                          setState(() {
-                                            push['PUSH_READ'] =
-                                                true; // 읽음 상태 업데이트
-                                          });
-                                        }
-                                      });
-                                    },
+                          var push = _applyFilter()[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
+                            child: ListTile(
+                              leading: Icon(
+                                Util.getIcon(push['TYPE_ICON'] ?? 'null'),
+                                color: push['PUSH_CHK'] == false
+                                    ? Colors.redAccent
+                                    : push['PUSH_READ'] == false
+                                        ? Colors.blueAccent
+                                        : Colors.grey,
+                              ),
+                              title: Text(
+                                push['PUSH_TITLE'] ?? '알림 제목',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: push['PUSH_CHK'] == false
+                                      ? FontWeight.bold
+                                      : push['PUSH_READ'] == false
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                              subtitle: Html(
+                                data: (push['PUSH_CONTENTS'] ?? '알림 내용')
+                                    .replaceAll(RegExp(r'<br\s*/?>'),
+                                        ' ') // <br> 태그를 공백으로 치환
+                                    .replaceAll(RegExp(r'<[^>]*>'),
+                                        ' ') // 모든 HTML 태그 제거
+                                    .trim(), // 불필요한 공백 제거,
+                                style: {
+                                  "body": Style(
+                                    fontSize: FontSize(14.0),
+                                    maxLines: 1,
+                                    textOverflow: TextOverflow.ellipsis,
+                                    color: Colors.grey[600],
                                   ),
-                                );
+                                },
+                              ),
+                              trailing: Text(
+                                Util.formatDate(push['PUSH_SEND_DATE']),
+                              ),
+                              onTap: () async {
+                                await Util.markNotificationAsRead(); // 알림 읽음 처리
+                                await setPushRead(push['PUSH_ID']); // 서버에 읽음 전송
+                                Navigator.pushNamed(
+                                  context,
+                                  '/push_type_detail',
+                                  arguments: push, // 상세 화면으로 데이터 전달
+                                ).then((result) {
+                                  if (result != null &&
+                                      result is bool &&
+                                      result) {
+                                    setState(() {
+                                      _refreshPushTypeList(); // 데이터 새로고침
+                                    });
+                                  } else {
+                                    setState(() {
+                                      push['PUSH_READ'] = true; // 읽음 상태 업데이트
+                                    });
+                                  }
+                                });
                               },
                             ),
-                    ),
-                  ),
-                ],
+                          );
+                        },
+                      ),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

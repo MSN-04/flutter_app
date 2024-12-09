@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert'; // JSON 변환을 위한 패키지
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -24,21 +25,42 @@ class LoginScreenState extends State<LoginScreen> {
   // 컨트롤러 및 포커스 노드 선언
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController otpController = TextEditingController();
+  final TextEditingController cellController = TextEditingController();
+  final TextEditingController authController = TextEditingController();
 
   final FocusNode idFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
-  final FocusNode otpFocusNode = FocusNode();
+  final FocusNode cellFocusNode = FocusNode();
+  final FocusNode authFocusNode = FocusNode();
 
   // 상태 변수
   bool isLoading = false; // 로딩 상태
+  bool isSmsSend = false;
   String? selectedComp; // 선택된 회사
+  String? selectedTechComp; // 선택된 회사
+  String? smsKey;
+  String? verifyKey;
+  int _seconds = 120; // 2분 = 120초
+  Timer? _timer; // 타이머 객체
+  // 남은 시간 계산
+  int get _minutes => _seconds ~/ 60;
+  int get _remainingSeconds => _seconds % 60;
+
   final Map<String, String> comps = {
     'NK': 'NK',
     'KHNT': 'KHNT',
     'ENK': 'ENK',
-    'TS': 'The Safety',
-    'TECH': 'NK Tech'
+    'The Safety': 'TS',
+    'NK Tech': 'TECH'
+  }; // 회사 리스트
+
+  final Map<String, String> techComps = {
+    'Osan': 'TECH1',
+    'Busan': 'TECH2',
+    'Jisa': 'TECH3',
+    'Seobusan': 'TECH4',
+    'Pyeongtaek CNG': 'TECH5',
+    'Wolgok': 'TECH6',
   }; // 회사 리스트
 
   /// 화면을 렌더링하는 메서드
@@ -85,6 +107,40 @@ class LoginScreenState extends State<LoginScreen> {
                 ),
                 dropdownColor: const Color(0xFF004A99), // 드롭다운 배경색
               ),
+              Visibility(
+                visible: selectedComp == 'TECH',
+                child: const SizedBox(height: 16),
+              ),
+              // 회사 선택 드롭다운
+              Visibility(
+                visible: selectedComp == 'TECH',
+                child: DropdownButtonFormField<String>(
+                  value: selectedTechComp,
+                  items: techComps.entries.map((entry) {
+                    return DropdownMenuItem<String>(
+                      value: entry.value,
+                      child: Text(entry.key,
+                          style: const TextStyle(color: Colors.white)),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedTechComp = value; // 선택된 회사 업데이트
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'NK TECH 회사',
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  dropdownColor: const Color(0xFF004A99), // 드롭다운 배경색
+                ),
+              ),
               const SizedBox(height: 16),
               // 아이디 입력 필드
               TextField(
@@ -121,22 +177,96 @@ class LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 16),
-              // OTP 입력 필드
-              TextField(
-                controller: otpController,
-                focusNode: otpFocusNode,
-                decoration: InputDecoration(
-                  labelText: 'OTP CODE(6자리)',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+              // 휴대폰 번호 입력 필드
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: cellController,
+                      focusNode: cellFocusNode,
+                      decoration: InputDecoration(
+                        labelText: '휴대전화',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.1),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
-                ),
-                style: const TextStyle(color: Colors.white),
+                  const SizedBox(width: 8), // 필드와 버튼 간격
+                  // 버튼
+                  ElevatedButton(
+                    onPressed: !isSmsSend ? onCellSendPressed : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          const Color.fromARGB(255, 255, 255, 255), // 버튼 색상
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      '코드 발송',
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
+              // 인증번호 입력 필드
+              Row(
+                children: [
+                  Expanded(
+                    child: Visibility(
+                      visible: isSmsSend,
+                      child: TextField(
+                        controller: authController,
+                        focusNode: authFocusNode,
+                        decoration: InputDecoration(
+                          labelText: '인증번호',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        obscureText: true, // 비밀번호 가리기
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Visibility(
+                    visible: isSmsSend,
+                    child: ElevatedButton(
+                      onPressed: null,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 255, 255, 255), // 버튼 색상
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: TextStyle(color: Colors.red[400])),
+                      child: Text(
+                        _seconds == 0
+                            ? '시간초과' // 카운트다운이 끝난 경우 텍스트
+                            : '$_minutes:${_remainingSeconds.toString().padLeft(2, '0')}', // 카운트다운 표시
+                        style: TextStyle(fontSize: 14, color: Colors.red[400]),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 32),
               // 로그인 버튼
               SizedBox(
@@ -162,6 +292,114 @@ class LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> onCellSendPressed() async {
+    // 휴대폰 번호 인증
+    var sysact = getSyactCode();
+    var url = Uri.parse("https://nkapi.nkcf.com/api/auth/CHK").toString();
+    var response = await HttpService.post(
+        url,
+        {
+          'SYACT': sysact,
+          'ID': idController.text,
+          'TEL': cellController.text,
+          'AUTH_TYPE': 'ERP',
+          'BEFORE_URL': '-'
+        },
+        header: 'form');
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      if (data['status'] == "Y") {
+        smsKey = data['sms_key'];
+        getSms(smsKey);
+      } else {
+        Util.showErrorAlert(data['status']);
+      }
+      _startCountdown();
+    } else {
+      var data = jsonDecode(response.body);
+      Util.showErrorAlert(data['Message']);
+      print(data);
+    }
+  }
+
+  Future<void> getSms(String? smsKey) async {
+    // 휴대폰 번호 인증
+    var sysact = getSyactCode();
+    var url = Uri.parse("https://nkapi.nkcf.com/api/auth/getsms").toString();
+    var response = await HttpService.post(
+        url,
+        {
+          'SYACT': sysact,
+          'SMS_KEY': smsKey,
+        },
+        header: 'form');
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      if (data['status'] == "Y") {
+        setState(() {
+          isSmsSend = true;
+          FocusScope.of(context).requestFocus(authFocusNode);
+        });
+        verifyKey = data['verify_key'];
+      } else {
+        Util.showErrorAlert(data['status']);
+      }
+    }
+  }
+
+  String getSyactCode() {
+    switch (selectedComp) {
+      case 'NK':
+        return '10';
+      case 'KHNT':
+        return '11';
+      case 'ENK':
+        return '20';
+      case 'TS':
+        return '31';
+      case 'TECH':
+        switch (selectedTechComp) {
+          case 'TECH1':
+            return '40';
+          case 'TECH2':
+            return '41';
+          case 'TECH3':
+            return '42';
+          case 'TECH4':
+            return '43';
+          case 'TECH5':
+            return '44';
+          case 'TECH6':
+            return '45';
+          default:
+            return '40';
+        }
+      default:
+        return '10';
+    }
+  }
+
+  void _startCountdown() {
+    setState(() {
+      _seconds = 120; // 초기화
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_seconds > 0) {
+        setState(() {
+          _seconds--; // 1초씩 감소
+        });
+      } else {
+        timer.cancel(); // 카운트다운 종료
+        setState(() {
+          isSmsSend = false;
+        });
+      }
+    });
   }
 
   /// 로그인 버튼 클릭 시 실행되는 메서드
@@ -240,25 +478,42 @@ class LoginScreenState extends State<LoginScreen> {
 
   /// 로그인 시도
   Future<bool> attemptLogin() async {
-    var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.login).toString();
-    var response = await HttpService.post(url, {
-      'id': idController.text,
-      'password': passwordController.text,
-      'otpCode': otpController.text,
-      'comp': selectedComp
-    });
+    var sysact = getSyactCode();
+    // var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.login).toString();
+    // var response = await HttpService.post(url, {
+    //   'id': idController.text,
+    //   'password': passwordController.text,
+    //   //'otpCode': otpController.text,
+    //   'comp': selectedComp
+    // });
+    var url = Uri.parse("https://nkapi.nkcf.com/api/auth/verify").toString();
+    var response = await HttpService.post(
+        url,
+        {
+          'SYACT': sysact,
+          'VERIFY_CODE': authController.text,
+          'AUTH_TYPE': "erp",
+          'SMS_KEY': smsKey,
+        },
+        header: 'form');
     if (response.statusCode == 200) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user', response.body);
-      var data = jsonDecode(response.body);
-      if (data['resultState'] == "Y") {
-        var unreadNotifications = await fetchUnreadNotifications();
-        prefs.setInt('unread_notifications', unreadNotifications);
-        updateBadge(unreadNotifications); // 배지 업데이트
-        prefs.setString('comp', selectedComp ?? 'NK');
-        return true;
-      } else {
-        Util.showErrorAlert(data['resultMessage']);
+      url = Uri.parse(UrlConstants.apiUrl + UrlConstants.getUser).toString();
+      response =
+          await HttpService.get('$url/${idController.text}/$selectedComp');
+
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', response.body);
+        var data = jsonDecode(response.body);
+        if (data['resultState'] == "Y") {
+          var unreadNotifications = await fetchUnreadNotifications();
+          prefs.setInt('unread_notifications', unreadNotifications);
+          updateBadge(unreadNotifications); // 배지 업데이트
+          prefs.setString('comp', selectedComp ?? 'NK');
+          return true;
+        } else {
+          Util.showErrorAlert(data['resultMessage']);
+        }
       }
     }
     return false;
@@ -375,7 +630,9 @@ class LoginScreenState extends State<LoginScreen> {
   void dispose() {
     idController.dispose();
     passwordController.dispose();
-    otpController.dispose();
+    cellController.dispose();
+    authController.dispose();
+    _timer?.cancel(); // 타이머 해제
     super.dispose();
   }
 }
