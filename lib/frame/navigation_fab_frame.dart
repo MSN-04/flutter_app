@@ -35,6 +35,7 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   // 인증 타임아웃 설정
   static const _authTimeout = Duration(seconds: 5);
   static const _noAuthTimeout = Duration(days: 7);
+  var isResumed = false;
 
   bool _isAuthenticating = false; // 생체 인증 중인지 여부
 
@@ -65,25 +66,34 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
     var logout = false; // 로그아웃 여부 플래그
 
     // 앱이 재개되었을 때의 처리
-    if (state == AppLifecycleState.resumed) {
-      if (_isAuthenticating) return;
-      bool isDeviceSupported =
-          await auth.isDeviceSupported(); // 장치가 생체 인증 지원 여부 확인
-      bool canCheckBiometrics = await auth.canCheckBiometrics; // 생체 인증 가능 여부 확인
-      if (!isDeviceSupported) {
-        logout = _shouldAuthenticate(
-            _noAuthTimeout, isDeviceSupported); // 인증 시간 초과 여부 확인
-      } else if (!canCheckBiometrics) {
-        logout = _shouldAuthenticate(
-            _authTimeout, canCheckBiometrics); // 인증 시간 초과 여부 확인
-      } else {
-        logout = _shouldAuthenticate(_authTimeout, true);
-      }
+    if (isResumed) {
+      if (state == AppLifecycleState.resumed) {
+        if (_isAuthenticating) return;
+        bool isDeviceSupported =
+            await auth.isDeviceSupported(); // 장치가 생체 인증 지원 여부 확인
+        bool canCheckBiometrics =
+            await auth.canCheckBiometrics; // 생체 인증 가능 여부 확인
+        if (!isDeviceSupported) {
+          logout = _shouldAuthenticate(
+              _noAuthTimeout, isDeviceSupported); // 인증 시간 초과 여부 확인
+        } else if (!canCheckBiometrics) {
+          logout = _shouldAuthenticate(
+              _authTimeout, canCheckBiometrics); // 인증 시간 초과 여부 확인
+        } else {
+          logout = _shouldAuthenticate(_authTimeout, true);
+        }
 
-      // 로그아웃 필요 시 처리
-      if (logout) {
-        _handleAppResume();
+        // 로그아웃 필요 시 처리
+        if (logout) {
+          _handleAppResume();
+        }
+
+        isResumed = false;
       }
+    }
+
+    if (state == AppLifecycleState.paused) {
+      isResumed = true;
     }
 
     // 인증 시간 갱신

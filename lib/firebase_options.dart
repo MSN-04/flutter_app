@@ -70,6 +70,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '355661409196',
     projectId: 'nk-push-app-prod',
     storageBucket: 'nk-push-app-prod.firebasestorage.app',
-    iosBundleId: 'com.nk.nkPushApp',
+    iosBundleId: 'com.nk.pushApp',
   );
 }
