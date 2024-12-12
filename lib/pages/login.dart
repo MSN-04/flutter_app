@@ -160,23 +160,23 @@ class LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               // 비밀번호 입력 필드
-              TextField(
-                controller: passwordController,
-                focusNode: passwordFocusNode,
-                decoration: InputDecoration(
-                  labelText: '비밀번호',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                obscureText: true, // 비밀번호 가리기
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 16),
+              // TextField(
+              //   controller: passwordController,
+              //   focusNode: passwordFocusNode,
+              //   decoration: InputDecoration(
+              //     labelText: '비밀번호',
+              //     labelStyle: const TextStyle(color: Colors.white70),
+              //     filled: true,
+              //     fillColor: Colors.white.withOpacity(0.1),
+              //     border: OutlineInputBorder(
+              //       borderRadius: BorderRadius.circular(10),
+              //       borderSide: BorderSide.none,
+              //     ),
+              //   ),
+              //   obscureText: true, // 비밀번호 가리기
+              //   style: const TextStyle(color: Colors.white),
+              // ),
+              // const SizedBox(height: 16),
               // 휴대폰 번호 입력 필드
               Row(
                 children: [
