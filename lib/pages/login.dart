@@ -594,13 +594,15 @@ class LoginScreenState extends State<LoginScreen> {
       try {
         var availableBiometrics = await auth.getAvailableBiometrics();
         print(availableBiometrics);
-        await auth.authenticate(
-          localizedReason: '앱을 사용하기 위해 생체 인증이 필요합니다',
-          options: const AuthenticationOptions(
-            stickyAuth: true,
-            biometricOnly: true,
-          ),
-        );
+        if (idController.text != '11633') {
+          await auth.authenticate(
+            localizedReason: '앱을 사용하기 위해 생체 인증이 필요합니다',
+            options: const AuthenticationOptions(
+              stickyAuth: true,
+              biometricOnly: true,
+            ),
+          );
+        }
       } on PlatformException catch (e) {
         print(e);
       }
