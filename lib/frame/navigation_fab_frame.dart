@@ -94,11 +94,6 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
 
     if (state == AppLifecycleState.paused) {
       isResumed = true;
-    }
-
-    // 인증 시간 갱신
-    if (state == AppLifecycleState.detached ||
-        state == AppLifecycleState.inactive) {
       _lastAuthenticatedTime = DateTime.now();
     }
   }
