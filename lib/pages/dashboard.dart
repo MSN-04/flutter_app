@@ -1,4 +1,5 @@
 import 'dart:convert'; // JSON 변환을 위한 패키지
+import 'dart:io';
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
 import 'package:flutter_html/flutter_html.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 사용
@@ -117,52 +118,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CircleAvatar(
                               radius: 40,
                               backgroundImage: NetworkImage(
-                                '${getPictureUrl()}${userData!['PSPSN_PICTURE'].toString()}?nocache=${DateTime.now().millisecondsSinceEpoch}',
+                                '${Util.getPictureUrl(comp)}${userData!['PSPSN_PICTURE'].toString()}?nocache=${DateTime.now().millisecondsSinceEpoch}',
                               ),
                             ),
                             const SizedBox(width: 16),
                             // 사용자 이름, 직책, 부서 정보
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      userData!['SYUSR_NAME'] ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      userData!['PSGRD_NAME'] ?? '',
-                                      style: const TextStyle(
-                                          fontSize: 12,
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        userData!['SYUSR_NAME'] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 24,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white),
+                                          color: Colors.white,
+                                        ),
+                                        softWrap: true,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        userData!['PSGRD_NAME'] ?? '',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white),
+                                        softWrap: true,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    userData!['PSDPT_NAME'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  userData!['PSDPT_NAME'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
+                                    softWrap: true,
                                   ),
-                                ),
-                                Text(
-                                  userData!['PSPSN_EMAIL'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
+                                  Text(
+                                    userData!['PSPSN_EMAIL'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                    softWrap: true,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -205,6 +212,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     backgroundColor: Colors.redAccent,
                                     child: const Icon(Icons.report),
                                   ),
+                                  const SizedBox(width: 8),
+                                  _refreshBadge(),
                                 ],
                               ),
                             ),
@@ -347,21 +356,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return false;
   }
 
-  /// 사용자 회사에 따라 프로필 이미지 URL 반환
-  String getPictureUrl() {
-    switch (comp) {
-      case 'NK':
-        return 'https://ep.nkcf.com';
-      case 'KHNT':
-        return 'https://ep.nkspe.com';
-      case 'ENK':
-        return 'https://ep.enkcf.com';
-      case 'TS':
-        return 'https://ep.thesafety.com';
-      case 'TECH':
-        return 'https://ep.nkcng.com';
-      default:
-        return 'https://ep.nkcf.com';
+  Widget _refreshBadge() {
+    if (Platform.isWindows) {
+      return GestureDetector(
+        onTap: _refreshPushData,
+        child: const Badge(
+          backgroundColor: Colors.white,
+          child: Icon(Icons.refresh),
+        ),
+      );
+    } else {
+      return const SizedBox.shrink();
     }
   }
 }

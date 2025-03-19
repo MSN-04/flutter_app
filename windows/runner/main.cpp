@@ -25,9 +25,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
-  if (!window.Create(L"nk_push_app", origin, size)) {
+  Win32Window::Size size(430, 932);
+  RECT screen_rect;
+  SystemParametersInfo(SPI_GETWORKAREA, 0, &screen_rect, 0); // Excludes taskbar
+  int screen_width = screen_rect.right;
+    // Calculate origin for top-right corner
+  int origin_x = screen_width - size.width;  // X-coordinate for top-right
+  int origin_y = 0;                         // Y-coordinate for top
+  Win32Window::Point origin(origin_x, origin_y);
+  
+  if (!window.Create(L"NK", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -58,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAMFebI6ziqsONY2TNzMxnqMDuEqC3UGiI',
-    appId: '1:355661409196:android:da67251f80ffe41ba1e809',
+    appId: '1:355661409196:android:d6bfcb3626c75005a1e809',
     messagingSenderId: '355661409196',
     projectId: 'nk-push-app-prod',
     storageBucket: 'nk-push-app-prod.firebasestorage.app',
@@ -66,10 +60,30 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCFLKiUwYMs0AFzBKrOXXcR_7xlWtnZfzc',
-    appId: '1:355661409196:ios:a7bf1860d8829ce1a1e809',
+    appId: '1:355661409196:ios:bbe196355a8c5795a1e809',
     messagingSenderId: '355661409196',
     projectId: 'nk-push-app-prod',
     storageBucket: 'nk-push-app-prod.firebasestorage.app',
     iosBundleId: 'com.nk.pushApp',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCFLKiUwYMs0AFzBKrOXXcR_7xlWtnZfzc',
+    appId: '1:355661409196:ios:bbe196355a8c5795a1e809',
+    messagingSenderId: '355661409196',
+    projectId: 'nk-push-app-prod',
+    storageBucket: 'nk-push-app-prod.firebasestorage.app',
+    iosBundleId: 'com.nk.pushApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyApVqeKVAGyEa6zPkcjNyn8WOwn2IeKHo4',
+    appId: '1:355661409196:web:99aba9e8df9cb583a1e809',
+    messagingSenderId: '355661409196',
+    projectId: 'nk-push-app-prod',
+    authDomain: 'nk-push-app-prod.firebaseapp.com',
+    storageBucket: 'nk-push-app-prod.firebasestorage.app',
+    measurementId: 'G-1Z3077KYH8',
+  );
+
 }

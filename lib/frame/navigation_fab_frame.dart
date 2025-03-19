@@ -106,40 +106,42 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
   }
 
   Future checkFcmToken() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    // String? token = Platform.isAndroid
-    //     ? await messaging.getToken()
-    //     : await messaging.getAPNSToken();
-    String? newToken = kReleaseMode
-        ? await messaging.getToken()
-        : Platform.isAndroid
-            ? await messaging.getToken()
-            : await messaging.getAPNSToken();
+    if (!Platform.isWindows) {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      // String? token = Platform.isAndroid
+      //     ? await messaging.getToken()
+      //     : await messaging.getAPNSToken();
+      String? newToken = kReleaseMode
+          ? await messaging.getToken()
+          : Platform.isAndroid
+              ? await messaging.getToken()
+              : await messaging.getAPNSToken();
 
-    if (newToken != null) {
-      print("FCM New Token: $newToken");
+      if (newToken != null) {
+        print("FCM New Token: $newToken");
 
-      // 로컬 저장소에 FCM 토큰 저장
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? originToken = prefs.getString('fcm_token');
-      print("FCM Origin Token: $originToken");
+        // 로컬 저장소에 FCM 토큰 저장
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? originToken = prefs.getString('fcm_token');
+        print("FCM Origin Token: $originToken");
 
-      if (newToken != originToken) {
-        var url =
-            Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken).toString();
-        var response = await HttpService.post(url, {
-          'id': userData?['PSPSN_NO'],
-          'token': newToken,
-        });
-        if (response.statusCode == 200) {
-          var data = jsonDecode(response.body);
-          if (data['resultState'] == "Y") {
-            await prefs.setString('fcm_token', newToken);
+        if (newToken != originToken) {
+          var url = Uri.parse(UrlConstants.apiUrl + UrlConstants.saveToken)
+              .toString();
+          var response = await HttpService.post(url, {
+            'id': userData?['PSPSN_NO'],
+            'token': newToken,
+          });
+          if (response.statusCode == 200) {
+            var data = jsonDecode(response.body);
+            if (data['resultState'] == "Y") {
+              await prefs.setString('fcm_token', newToken);
+            }
           }
         }
+      } else {
+        print("FCM 토큰 가져오기 실패");
       }
-    } else {
-      print("FCM 토큰 가져오기 실패");
     }
   }
 
@@ -297,6 +299,17 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
               );
             }),
             const Divider(),
+            //채팅하기 메뉴
+            ListTile(
+              leading: const Icon(Icons.forum, color: Color(0xFF004A99)),
+              title: const Text('채팅하기',
+                  style: TextStyle(color: Color(0xFF004A99))),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/chat', arguments: {});
+              },
+            ),
+            const Divider(),
             //로그아웃 메뉴
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
@@ -314,15 +327,20 @@ class _NavigationFABFrameState extends State<NavigationFABFrame>
       // 플로팅 액션 버튼
       floatingActionButton: Builder(
         builder: (BuildContext context) {
-          return FloatingActionButton(
-            onPressed: () {
-              Scaffold.of(context).openEndDrawer();
-            },
-            backgroundColor: const Color(0xFF8cc63f),
-            child: const Icon(Icons.menu),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10), // 아래쪽 여백 추가
+            child: FloatingActionButton(
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+              backgroundColor: const Color(0xFF8cc63f),
+              child: const Icon(Icons.menu),
+            ),
           );
         },
       ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       // 전달된 자식 위젯 렌더링
       body: widget.child,
     );

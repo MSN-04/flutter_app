@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart'; // Flutter UI 구성 요소
 import 'package:fluttertoast/fluttertoast.dart'; // Toast 메시지 표시
 import 'package:intl/intl.dart'; // 날짜 및 시간 형식화
@@ -251,5 +253,44 @@ class Util {
       prefs.setInt('unread_notifications', unreadCount); // 업데이트된 값 저장
       updateBadge(unreadCount); // 배지 업데이트
     }
+  }
+
+  /// 사용자 회사에 따라 프로필 이미지 URL 반환
+  static String getPictureUrl(comp) {
+    switch (comp) {
+      case 'NK':
+        return 'https://ep.nkcf.com';
+      case 'KHNT':
+        return 'https://ep.nkspe.com';
+      case 'ENK':
+        return 'https://ep.enkcf.com';
+      case 'TS':
+        return 'https://ep.thesafety.com';
+      case 'TECH':
+        return 'https://ep.nkcng.com';
+      default:
+        return 'https://ep.nkcf.com';
+    }
+  }
+
+  static void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text.rich(TextSpan(
+          text: message,
+          style: const TextStyle(color: Colors.white),
+        )),
+        backgroundColor: const Color(0xFF004A99),
+      ),
+    );
+  }
+
+  static Future<void> logToFile(Object log) async {
+    final logFile = File('nk_app_log.txt'); // 앱 실행 경로에 로그 파일 생성
+    final timestamp = DateTime.now().toIso8601String();
+    final logContent = '[$timestamp] log: $log\n';
+
+    // 파일에 로그 추가
+    await logFile.writeAsString(logContent, mode: FileMode.append);
   }
 }

@@ -48,7 +48,7 @@ class LoginScreenState extends State<LoginScreen> {
 
   final Map<String, String> comps = {
     'NK': 'NK',
-    'KHNT': 'KHNT',
+    'NK Adamant': 'KHNT',
     'ENK': 'ENK',
     'The Safety': 'TS',
     'NK Tech': 'TECH'
@@ -486,7 +486,9 @@ class LoginScreenState extends State<LoginScreen> {
 
   /// 로그인 시도
   Future<bool> attemptLogin() async {
-    if (cellController.text == '01011111111' && authController.text == '1111') {
+    if ((cellController.text == '01011111111' &&
+            authController.text == '1111') ||
+        kDebugMode) {
       var url =
           Uri.parse(UrlConstants.apiUrl + UrlConstants.getUser).toString();
       var response =

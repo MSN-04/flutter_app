@@ -7,6 +7,7 @@ import 'package:flutter/material.dart'; // Flutter UI
 import 'package:firebase_core/firebase_core.dart'; // Firebase 초기화
 import 'package:flutter_app_badger/flutter_app_badger.dart'; // 앱 아이콘 배지 관리
 import 'package:nk_push_app/Utils/util.dart'; // 유틸리티 클래스
+import 'package:nk_push_app/pages/chat.dart';
 import 'package:nk_push_app/pages/push_type_list.dart'; // 알림 리스트 화면
 import 'package:nk_push_app/pages/push_type.dart'; // 알림 유형 화면
 import 'package:nk_push_app/pages/terms_agreement.dart'; // 약관 동의 화면
@@ -39,23 +40,44 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   FlutterAppBadger.updateBadgeCount(unreadCount);
 }
 
-/// 앱 실행 시작점
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Firebase 초기화
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      name: "nk-push-app-dev",
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
+}
 
-  // FCM 토큰 초기화
-  await initializeFCMToken();
+/// 앱 실행 시작점
+void main(List<String>? arguments) async {
+  if (!Platform.isWindows) {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // 백그라운드 메시지 핸들러 등록
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    if (kDebugMode) {
+      HttpOverrides.global = MyHttpOverrides();
+    }
+
+    // Firebase 초기화
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        name: "nk-push-app-dev",
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    // FCM 토큰 초기화
+    await initializeFCMToken();
+
+    // 백그라운드 메시지 핸들러 등록
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } else {
+    if (arguments != null && arguments.isNotEmpty) {
+      final comp = arguments[0];
+      final userId = arguments[1];
+      await handleWindowsArgument(comp, userId);
+    }
+    print('Received arguments: $arguments');
+  }
 
   runApp(const MyApp());
 }
@@ -81,16 +103,36 @@ Future<void> initializeFCMToken() async {
   });
 }
 
+/// Windows Argument 처리
+Future<void> handleWindowsArgument(String comp, String userId) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // 전달받은 ID를 저장
+  prefs.setString('erp_user_comp', comp);
+  prefs.setString('erp_user_id', userId);
+}
+
 /// FCM 메시지 처리
 Future<void> handleMessage(RemoteMessage message) async {
+  String title = message.notification?.title ?? "";
+  String body = message.notification?.body ?? "";
+
+  // 만약 title에 '[채팅]'이 포함되어 있으면 title + body 표시
+  String fullMessage = title.contains("[채팅]") ? "$title\n$body" : title;
+
   bool confirmed = await Util.showConfirmDialog(
     navigatorKey.currentContext!,
-    "${message.notification?.title}",
+    fullMessage,
   );
 
   // 사용자가 확인을 눌렀을 경우 대시보드로 이동
   if (confirmed) {
-    navigatorKey.currentState?.pushNamed('/dashboard');
+    if (title.contains("[채팅]")) {
+      navigatorKey.currentState?.pushNamed('/chat', arguments: title);
+    } else {
+      navigatorKey.currentState?.pushNamed('/dashboard');
+    }
+    ;
   }
 }
 
@@ -121,6 +163,7 @@ class MyApp extends StatelessWidget {
         '/push_type': (context) => const PushTypeScreen(),
         '/push_type_list': (context) => const PushTypeListScreen(),
         '/push_type_detail': (context) => const PushTypeDetailScreen(),
+        '/chat': (context) => ChatScreen(),
       },
     );
   }
@@ -144,17 +187,44 @@ class SplashScreenState extends State<SplashScreen> {
   /// 로그인 상태를 확인하고 적절한 화면으로 이동
   Future<void> checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.containsKey('user');
 
-    if (isLoggedIn) {
-      await updateFCMTokenIfNeeded();
-      Future.microtask(() {
-        Navigator.pushReplacementNamed(context, '/dashboard'); // 대시보드로 이동
-      });
+    // Windows 플랫폼인 경우 ERP에서 전달받은 사용자 ID 기반으로 로그인 처리
+    if (Platform.isWindows &&
+        prefs.containsKey('erp_user_comp') &&
+        prefs.containsKey('erp_user_id')) {
+      String? comp = prefs.getString('erp_user_comp');
+      String? userId = prefs.getString('erp_user_id');
+
+      var url =
+          Uri.parse(UrlConstants.apiUrl + UrlConstants.getUser).toString();
+      var response =
+          await HttpService.get('$url/$userId/${getSyactCode(comp!)}');
+
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', response.body);
+        var data = jsonDecode(response.body);
+        if (data['resultState'] == "Y") {
+          prefs.setString('comp', getSyactCode(comp!) ?? 'NK');
+          Navigator.pushReplacementNamed(context, '/dashboard');
+          return;
+        } else {
+          Util.showErrorAlert(data['resultMessage']);
+        }
+      }
     } else {
-      Future.microtask(() {
-        Navigator.pushReplacementNamed(context, '/login'); // 로그인 화면으로 이동
-      });
+      bool isLoggedIn = prefs.containsKey('user');
+
+      if (isLoggedIn) {
+        await updateFCMTokenIfNeeded();
+        Future.microtask(() {
+          Navigator.pushReplacementNamed(context, '/dashboard'); // 대시보드로 이동
+        });
+      } else {
+        Future.microtask(() {
+          Navigator.pushReplacementNamed(context, '/login'); // 로그인 화면으로 이동
+        });
+      }
     }
   }
 
@@ -210,5 +280,32 @@ class SplashScreenState extends State<SplashScreen> {
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()), // 로딩 상태 표시
     );
+  }
+
+  String getSyactCode(String comp) {
+    switch (comp) {
+      case '10':
+        return 'NK';
+      case '11':
+        return 'KHNT';
+      case '20':
+        return 'ENK';
+      case '31':
+        return 'TS';
+      case '40':
+        return 'TECH1';
+      case '41':
+        return 'TECH2';
+      case '42':
+        return 'TECH3';
+      case '43':
+        return 'TECH4';
+      case '44':
+        return 'TECH5';
+      case '45':
+        return 'TECH6';
+      default:
+        return 'NK';
+    }
   }
 }
