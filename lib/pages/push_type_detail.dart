@@ -20,40 +20,32 @@ class PushTypeDetailScreen extends StatefulWidget {
 
 class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
   final GlobalKey _htmlKey = GlobalKey();
+  final ScrollController _horizontalScrollController = ScrollController();
   double _calculatedWidth = 0.0;
   bool _isHtmlRendered = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // HTML 렌더링이 완료될 때까지 대기
-      setState(() {
-        _isHtmlRendered = true;
-      });
-      _calculateRenderedWidth();
-    });
   }
 
-  void _calculateRenderedWidth() async {
-    final RenderBox? renderBox =
-        _htmlKey.currentContext?.findRenderObject() as RenderBox?;
+  Future<void> _calculateRenderedWidth() async {
+    if (_horizontalScrollController.hasClients) {
+      final double maxScrollableExtent =
+          _horizontalScrollController.position.maxScrollExtent;
+      final double screenWidth = MediaQuery.of(context).size.width;
 
-    if (renderBox != null) {
-      final double visibleWidth = renderBox.size.width;
+      final RenderBox? renderBox =
+          _htmlKey.currentContext?.findRenderObject() as RenderBox?;
 
-      final ScrollableState? scrollableState =
-          Scrollable.of(_htmlKey.currentContext!);
-      if (scrollableState != null) {
-        final ScrollPosition position = scrollableState.position;
-        final double maxScrollableExtent = position.maxScrollExtent;
-
-        final double overflowPixels = maxScrollableExtent - visibleWidth;
-
-        setState(() {
-          _calculatedWidth =
-              overflowPixels > 0 ? visibleWidth + overflowPixels : visibleWidth;
-        });
+      if (renderBox != null) {
+        if (renderBox.size.width + 10 > _calculatedWidth) {
+          setState(() {
+            _calculatedWidth = maxScrollableExtent > 0
+                ? screenWidth + maxScrollableExtent
+                : screenWidth;
+          });
+        }
       }
     }
   }
@@ -139,18 +131,23 @@ class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
                 padding: const EdgeInsets.all(20.0),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      await Future.delayed(Duration(seconds: 2));
                       final RenderBox? renderBox = _htmlKey.currentContext
                           ?.findRenderObject() as RenderBox?;
-                      if (renderBox != null &&
-                          _calculatedWidth != renderBox.size.width) {
-                        setState(() {
-                          _calculatedWidth = renderBox.size.width;
-                          print(
-                              '_calculatedWidth_calculatedWidth : $_calculatedWidth');
-                          print(
-                              "Screen Width: ${MediaQuery.of(context).size.width}");
-                        });
+                      if (renderBox != null) {
+                        final RenderBox? renderBox = _htmlKey.currentContext
+                            ?.findRenderObject() as RenderBox?;
+
+                        // print('현재 크기: $_calculatedWidth');
+                        // print('renderBox 크기  ${renderBox?.size.width}');
+                        // print(
+                        //     '추가스크롤 크기  ${_horizontalScrollController.position.maxScrollExtent}');
+                        // print(
+                        //     'context 크기  ${MediaQuery.of(context).size.width}');
+                        // print("가로 스크롤 최대 크기: $_calculatedWidth");
+
+                        // setState(() {});
                       }
                     });
 
@@ -181,11 +178,8 @@ class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
                             child: SingleChildScrollView(
                               scrollDirection: Axis.vertical,
                               child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: MediaQuery.of(context).size.width,
-                                  maxWidth: _calculatedWidth > 0
-                                      ? _calculatedWidth
-                                      : MediaQuery.of(context).size.width,
+                                constraints: const BoxConstraints(
+                                  minWidth: 400, // 최소 너비 조정
                                 ),
                                 child: Html(
                                   key: _htmlKey,
@@ -193,8 +187,8 @@ class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
                                   extensions: const [TableHtmlExtension()],
                                   style: {
                                     "table": Style(
-                                      width: Width(100, Unit.percent),
-                                      border: Border.all(color: Colors.grey),
+                                      //width: Width(100, Unit.percent),
+                                      // border: Border.all(color: Colors.grey),
                                       padding: HtmlPaddings.all(8),
                                       whiteSpace: WhiteSpace.pre,
                                     ),
@@ -209,6 +203,20 @@ class _PushTypeDetailScreenState extends State<PushTypeDetailScreen> {
                                       padding: HtmlPaddings.all(8),
                                       whiteSpace: WhiteSpace.pre,
                                     ),
+                                    "ul": Style(
+                                      padding: HtmlPaddings.all(10),
+                                      margin: Margins.all(10),
+                                      listStyleType: ListStyleType.disc,
+                                      display: Display.block,
+                                    ),
+                                    "li": Style(
+                                        padding: HtmlPaddings.all(5),
+                                        fontSize: FontSize.large,
+                                        color: Colors.black,
+                                        display: Display.block,
+                                        whiteSpace:
+                                            WhiteSpace.normal, // 자동 줄 바꿈
+                                        margin: Margins.only(bottom: 5)),
                                   },
                                   onLinkTap: (url, _, __) {
                                     if (url != null) {

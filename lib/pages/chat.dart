@@ -7,6 +7,7 @@ import 'package:nk_push_app/constants/url_constants.dart';
 import 'package:nk_push_app/frame/navigation_fab_frame.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signalr_netcore/signalr_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -57,10 +58,19 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     leaveChatRoom(); // 채팅방 나가기 요청
+    hubConnection.stop();
     super.dispose();
   }
 
+  final RegExp urlRegex = RegExp(
+    r'^(https?:\/\/)?([\w\d-]+\.)+[\w\d]{2,}(\/\S*)?$',
+    caseSensitive: false,
+  );
+
   void leaveChatRoom() async {
+    setState(() {
+      messages.clear();
+    });
     if (hubConnection.state == HubConnectionState.Connected &&
         selectedChatRoom != null) {
       await hubConnection
@@ -72,6 +82,8 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       selectedChatRoom = room;
       isSearching = false;
+      searchResults.clear();
+      messages.clear();
     });
     await hubConnection.invoke("GetMessages", args: [
       selectedChatRoom?['CHAT_ROOM_ID'],
@@ -243,27 +255,56 @@ class _ChatScreenState extends State<ChatScreen> {
       try {
         if (result is List && result.isNotEmpty) {
           if (result.first is List) {
-            var nestedList = result.first as List<dynamic>;
-            var tempMessages = nestedList.cast<Map<String, dynamic>>();
+            var newMessages =
+                (result.first as List<dynamic>).cast<Map<String, dynamic>>();
 
-            setState(() {
-              messages = tempMessages;
-            });
+            // ✅ 기존 메시지와 비교하여 중복 제거 + 읽음 상태 업데이트
+            List<Map<String, dynamic>> updatedMessages = [];
+            for (var message in newMessages) {
+              bool exists = messages.any((m) =>
+                  m['CHAT_ROOM_ID'] == message['CHAT_ROOM_ID'] &&
+                  m['MESSAGE_ID'] == message['MESSAGE_ID']);
 
-            markMessagesAsRead();
+              if (!exists) {
+                // ✅ 새로운 메시지 추가
+                updatedMessages.add(message);
+              } else {
+                // ✅ 기존 메시지 업데이트 (UNREAD_COUNT = 0으로 변경)
+                setState(() {
+                  messages = messages.map((m) {
+                    if (m['CHAT_ROOM_ID'] == message['CHAT_ROOM_ID'] &&
+                        m['MESSAGE_ID'] == message['MESSAGE_ID']) {
+                      return {
+                        ...m,
+                        'UNREAD_COUNT': message['UNREAD_COUNT']
+                      }; // 읽음 상태로 업데이트
+                    }
+                    return m;
+                  }).toList();
+                });
+              }
+            }
 
-            // 프레임이 완료된 후 스크롤을 아래로 이동
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollToBottomAnimated();
-            });
+            if (updatedMessages.isNotEmpty) {
+              setState(() {
+                messages.addAll(updatedMessages);
+              });
+
+              markMessagesAsRead();
+
+              // ✅ 새로운 메시지가 추가된 경우 스크롤 자동 이동
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollToBottomAnimated();
+              });
+            }
           } else {
-            print("Unexpected data format inside list: ${result.first}");
+            print("⚠️ Unexpected data format inside list: ${result.first}");
           }
         } else {
-          print("Unexpected data format: $result");
+          print("⚠️ Unexpected data format: $result");
         }
       } catch (e) {
-        print("ChatRoomListResults 처리 중 오류: $e");
+        print("🚨 ChatMessageListResults 처리 중 오류: $e");
       }
     });
 
@@ -292,16 +333,21 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _reconnect() async {
-    await Future.delayed(const Duration(seconds: 2));
-    try {
-      await hubConnection.start();
-      setState(() {
-        connectionId = hubConnection.connectionId; // connectionId 저장
-      });
-      Util.showSnackBar(context, "재연결 성공!");
-    } catch (e) {
-      Util.showSnackBar(context, "재연결 실패: ${e.toString()}");
+    for (int i = 0; i < 3; i++) {
+      // 최대 3번 재시도
+      await Future.delayed(Duration(seconds: 2 * (i + 1))); // 2, 4, 6초 대기 후 재시도
+      try {
+        await hubConnection.start();
+        setState(() {
+          connectionId = hubConnection.connectionId;
+        });
+        print("✅ 재연결 성공! Connection ID: $connectionId");
+        return;
+      } catch (e) {
+        print("🚨 재연결 실패: ${e.toString()} (시도 $i)");
+      }
     }
+    print("❌ 3번 시도 후 재연결 실패");
   }
 
   @override
@@ -453,6 +499,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   }
                                   _changeChatRoom(chatRooms[index]);
                                   isSearching = false;
+                                  searchResults.clear();
                                 });
                                 Navigator.pop(context); // Drawer 닫기
                               },
@@ -473,55 +520,103 @@ class _ChatScreenState extends State<ChatScreen> {
                 : Column(
                     children: [
                       Expanded(
-                        child: ListView.builder(
+                        child: ListView.separated(
                           controller: _scrollController,
                           itemCount: messages.length,
-                          itemBuilder: (context, index) => ListTile(
-                            title: Align(
-                              alignment: userData?['PSPSN_NO'] ==
-                                      messages[index]['SENDER_ID']
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 4), // 메시지 간격 추가
+                          itemBuilder: (context, index) {
+                            final message = messages[index];
+                            final isMe =
+                                userData?['PSPSN_NO'] == message['SENDER_ID'];
+                            final unreadCount =
+                                message['UNREAD_COUNT'] ?? 0; // 🔹 읽지 않은 메시지 수
+
+                            final String text = message['MESSAGE'] ?? "";
+
+                            final bool isUrl =
+                                urlRegex.hasMatch(text); // ✅ URL 여부 확인
+
+                            return Align(
+                              alignment: isMe
                                   ? Alignment.centerRight
                                   : Alignment.centerLeft,
                               child: Row(
                                 mainAxisSize:
-                                    MainAxisSize.min, // 내용 크기에 맞게 Row 크기 조정
+                                    MainAxisSize.min, // ✅ 내용 크기에 맞게 Row 크기 조정
                                 crossAxisAlignment:
-                                    CrossAxisAlignment.end, // 아래쪽 정렬
+                                    CrossAxisAlignment.end, // 🔹 말풍선과 숫자 아래쪽 정렬
                                 children: [
+                                  if (!isMe &&
+                                      unreadCount >
+                                          0) // 🔥 보낸 메시지가 아니면서, 안 읽은 경우만 표시
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: Text(
+                                        unreadCount.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 12, color: Colors.red),
+                                      ),
+                                    ),
+                                  if (isMe &&
+                                      unreadCount >
+                                          0) // 🔥 내가 보낸 메시지에서 안 읽은 경우만 표시
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: Text(
+                                        unreadCount.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 12, color: Colors.black),
+                                      ),
+                                    ),
                                   Container(
                                     constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.of(context).size.width *
-                                                0.7), // 최대 너비 70%
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width *
+                                              0.7,
+                                    ),
                                     padding: const EdgeInsets.all(12),
-                                    margin:
-                                        const EdgeInsets.symmetric(vertical: 4),
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 4, horizontal: 8),
                                     decoration: BoxDecoration(
-                                      color: userData?['PSPSN_NO'] ==
-                                              messages[index]['SENDER_ID']
+                                      color: isMe
                                           ? Colors.blue[100]
                                           : Colors.grey[200],
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(
-                                      messages[index]['MESSAGE'],
-                                      overflow: TextOverflow.visible,
-                                      softWrap: true,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4), // 말풍선과 숫자 사이 간격
-                                  Text(
-                                    (messages[index]['UNREAD_COUNT'] ?? 0) > 0
-                                        ? messages[index]['UNREAD_COUNT']
-                                            .toString()
-                                        : "",
-                                    style: TextStyle(
-                                        fontSize: 12, color: Colors.grey[600]),
+                                    child: isUrl
+                                        ? InkWell(
+                                            onTap: () async {
+                                              Uri url = Uri.parse(text);
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url,
+                                                    mode: LaunchMode
+                                                        .externalApplication);
+                                              } else {
+                                                print("⚠️ URL 열기 실패: $text");
+                                              }
+                                            },
+                                            child: Text(
+                                              text,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors
+                                                    .blue, // ✅ URL은 파란색으로 표시
+                                                decoration: TextDecoration
+                                                    .underline, // ✅ 밑줄 추가
+                                              ),
+                                            ),
+                                          )
+                                        : SelectableText(
+                                            text,
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                       _buildMessageInput(),
@@ -708,6 +803,7 @@ class _ChatScreenState extends State<ChatScreen> {
               selectedChatRoom == null
                   ? isSearching = true
                   : isSearching = false;
+              searchResults.clear();
             });
           },
           child: const Icon(Icons.cancel, color: Colors.white),
@@ -727,6 +823,7 @@ class _ChatScreenState extends State<ChatScreen> {
           onTap: () {
             setState(() {
               isSearching = true;
+              searchResults.clear();
               _searchFocusNode.requestFocus();
             });
           },
@@ -799,6 +896,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     //   messages.add(newMessage);
                     messageController.clear();
                     isSearching = false;
+                    searchResults.clear();
                   });
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _scrollToBottomAnimated();
