@@ -8,6 +8,7 @@ import 'package:nk_push_app/frame/navigation_fab_frame.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/gestures.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -570,49 +571,50 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                     ),
                                   Container(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width *
-                                              0.7,
-                                    ),
-                                    padding: const EdgeInsets.all(12),
-                                    margin: const EdgeInsets.symmetric(
-                                        vertical: 4, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: isMe
-                                          ? Colors.blue[100]
-                                          : Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: isUrl
-                                        ? InkWell(
-                                            onTap: () async {
-                                              Uri url = Uri.parse(text);
-                                              if (await canLaunchUrl(url)) {
-                                                await launchUrl(url,
-                                                    mode: LaunchMode
-                                                        .externalApplication);
-                                              } else {
-                                                print("⚠️ URL 열기 실패: $text");
-                                              }
-                                            },
-                                            child: Text(
-                                              text,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors
-                                                    .blue, // ✅ URL은 파란색으로 표시
-                                                decoration: TextDecoration
-                                                    .underline, // ✅ 밑줄 추가
-                                              ),
-                                            ),
-                                          )
-                                        : SelectableText(
-                                            text,
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                  ),
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            MediaQuery.of(context).size.width *
+                                                0.7,
+                                      ),
+                                      padding: const EdgeInsets.all(12),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 4, horizontal: 8),
+                                      decoration: BoxDecoration(
+                                        color: isMe
+                                            ? Colors.blue[100]
+                                            : Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: _buildMessageContent(text)
+                                      // isUrl
+                                      //     ? InkWell(
+                                      //         onTap: () async {
+                                      //           Uri url = Uri.parse(text);
+                                      //           if (await canLaunchUrl(url)) {
+                                      //             await launchUrl(url,
+                                      //                 mode: LaunchMode
+                                      //                     .externalApplication);
+                                      //           } else {
+                                      //             print("⚠️ URL 열기 실패: $text");
+                                      //           }
+                                      //         },
+                                      //         child: Text(
+                                      //           text,
+                                      //           style: const TextStyle(
+                                      //             fontSize: 14,
+                                      //             color: Colors
+                                      //                 .blue, // ✅ URL은 파란색으로 표시
+                                      //             decoration: TextDecoration
+                                      //                 .underline, // ✅ 밑줄 추가
+                                      //           ),
+                                      //         ),
+                                      //       )
+                                      //     : SelectableText(
+                                      //         text,
+                                      //         style:
+                                      //             const TextStyle(fontSize: 14),
+                                      //       ),
+                                      ),
                                 ],
                               ),
                             );
@@ -907,6 +909,58 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessageContent(String text) {
+    final RegExp urlRegex = RegExp(
+      r'(https?:\/\/[\w\d\-]+\.[\w\d\-]+(?:\.[\w]{2,})?(?:\/\S*)?)',
+      caseSensitive: false,
+    );
+
+    final matches = urlRegex.allMatches(text);
+    final List<TextSpan> spans = [];
+    int start = 0;
+
+    for (final match in matches) {
+      if (match.start > start) {
+        spans.add(TextSpan(
+          text: text.substring(start, match.start),
+          style: const TextStyle(fontSize: 14, color: Colors.black),
+        ));
+      }
+
+      final urlText = match.group(0)!;
+      spans.add(TextSpan(
+        text: urlText,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Colors.blue,
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () async {
+            final Uri url = Uri.parse(urlText);
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url, mode: LaunchMode.externalApplication);
+            } else {
+              print("⚠️ URL 열기 실패: $urlText");
+            }
+          },
+      ));
+
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(start),
+        style: const TextStyle(fontSize: 14, color: Colors.black),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
     );
   }
 }
